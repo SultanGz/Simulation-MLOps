@@ -6,8 +6,8 @@ interface Detail {
   kind: string;
   title: string;
   description: string;
-  input?: string;
-  output?: string;
+  /** Hint shown for stages — their details live on the canvas. */
+  hint?: string;
 }
 
 function resolveDetail(id: string): Detail | undefined {
@@ -17,8 +17,7 @@ function resolveDetail(id: string): Detail | undefined {
       kind: `Lifecycle stage ${stage.order} of ${lifecycleStages.length}`,
       title: stage.name,
       description: stage.summary,
-      input: stage.input,
-      output: stage.output,
+      hint: "Inputs and outputs are shown next to the stage on the canvas.",
     };
   }
   const element = getElement(id);
@@ -50,18 +49,7 @@ export function DetailPanel({ selectedId, onSelect }: DetailPanelProps) {
           <span className="inspector__kind">{detail.kind}</span>
           <h2 className="inspector__name">{detail.title}</h2>
           <p className="inspector__description">{detail.description}</p>
-          {detail.input && (
-            <div className="inspector__io">
-              <h3>Input</h3>
-              <p>{detail.input}</p>
-            </div>
-          )}
-          {detail.output && (
-            <div className="inspector__io">
-              <h3>Output</h3>
-              <p>{detail.output}</p>
-            </div>
-          )}
+          {detail.hint && <p className="inspector__hint">{detail.hint}</p>}
         </>
       ) : (
         <>

@@ -27,25 +27,27 @@ backend services are needed at runtime — all scenario data is bundled.
 ## What's in this milestone
 
 The app is a **single full-viewport canvas** (React Flow), not a scrolling
-page. Everything lives on one curated spatial workspace with two labeled
-regions:
+page. Everything lives on one curated spatial workspace organized around one
+labeled system boundary:
 
-- **System Context region** — C4 Level 1: *Learner* and *Instructor* people
-  nodes connected to the *simulation-MLOps* system node, with offset edges so
-  labels never overlap.
-- **MLOps Lifecycle region** — the eight provider-neutral stages as a
-  connected, numbered chain (Define → Acquire → Prepare → Train → Evaluate →
-  Register/package/test → Deploy → Monitor/respond). Completed, current, and
-  upcoming stages are visually distinct.
+- **simulation-MLOps boundary** — the system itself. Inside it, the eight
+  provider-neutral lifecycle stages run as a numbered, connected serpentine:
+  stages 1–4 left-to-right, a turn downward, then 5–8 right-to-left.
+- **Actors outside the boundary** — *Learner* and *Instructor* sit in a column
+  on the left with labeled relationship arrows to and from the boundary.
+- **Inline stage details** — selecting a stage attaches a detail card node on
+  the canvas (connected to the stage) showing what it does plus its labeled
+  Input and Output. Only the selected stage expands.
 
 Screen-fixed overlays (they do not scroll or drift with the canvas):
 
 - **Header HUD**: name, one-line purpose, C4 level tabs (Level 1 active;
   2–4 planned/disabled), theme toggle.
 - **Toolbar HUD**: Start / Next / Reset and a "Stage N of 8" progress chip.
-- **Inspector HUD**: concise read-out for the selected element — a stage shows
-  its summary plus structured Input/Output. The full element list stays behind
-  a collapsed "Canvas contents" disclosure as the text alternative.
+- **Inspector HUD**: concise read-out for the selected person, system, or
+  relationship (stage I/O lives on the canvas, not here). The full element
+  list stays behind a collapsed "Canvas contents" disclosure as the text
+  alternative.
 
 Canvas behavior:
 
@@ -66,9 +68,10 @@ src/
   index.css                      theme variables + node/region/HUD styles
   features/
     canvas/
-      WorkspaceCanvas.tsx        React Flow canvas: regions, nodes, edges, camera control
+      WorkspaceCanvas.tsx        React Flow canvas: boundary, nodes, edges, camera control
       StageNode.tsx              compact lifecycle stage node
-      RegionNode.tsx             labeled region backdrop
+      StageDetailNode.tsx        inline Input/Output card attached to the selected stage
+      RegionNode.tsx             the single "simulation-MLOps" system boundary
     context/
       contextData.ts             C4 Level 1 elements + relationships (single source of truth)
       ContextNode.tsx            person/system node renderer
