@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { ContextDiagram } from "./features/context/ContextDiagram";
+import { WorkspaceCanvas } from "./features/canvas/WorkspaceCanvas";
 import { DetailPanel } from "./features/context/DetailPanel";
-import { ContextList } from "./features/context/ContextList";
-import { LifecycleSection } from "./features/lifecycle/LifecycleSection";
 import { lifecycleStages } from "./features/lifecycle/lifecycleData";
 import {
   initialSimulationState,
@@ -24,7 +22,6 @@ type Theme = "light" | "dark";
 export default function App() {
   const [theme, setTheme] = useState<Theme>("light");
   const [selectedId, setSelectedId] = useState<string | null>("system");
-  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [sim, setSim] = useState<SimulationState>(initialSimulationState);
 
   useEffect(() => {
@@ -40,115 +37,86 @@ export default function App() {
   const onReset = useCallback(() => {
     setSim(reset());
     setSelectedId("system");
-    setSelectedStageId(null);
   }, []);
 
   const progress = !sim.started
     ? "Not started"
     : sim.finished
-      ? "Complete — all 8 stages"
+      ? "Complete"
       : `Stage ${sim.stepIndex} of ${lifecycleStages.length}`;
 
   return (
-    <div className="app">
-      <header className="site-header">
-        <div className="site-header__row">
-          <div>
-            <h1 className="site-header__title">simulation-MLOps</h1>
-            <p className="site-header__purpose">
-              Learn the MLOps lifecycle through guided in-browser simulations.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={toggleTheme}
-            aria-pressed={theme === "dark"}
-          >
-            {theme === "light" ? "Dark theme" : "Light theme"}
-          </button>
+    <div className="app-shell">
+      <WorkspaceCanvas
+        selectedId={selectedId}
+        activeStageId={sim.step.activeStageId}
+        activeOrder={sim.started ? sim.stepIndex : 0}
+        highlightedNodeIds={sim.step.highlightedNodeIds}
+        highlightedEdgeIds={sim.step.highlightedEdgeIds}
+        onSelect={setSelectedId}
+        theme={theme}
+      />
+
+      <header className="hud-header">
+        <div className="hud-header__brand">
+          <h1>simulation-MLOps</h1>
+          <p>Learn the MLOps lifecycle through guided in-browser simulations.</p>
         </div>
+        <nav className="level-nav" aria-label="C4 diagram levels">
+          {levels.map((l) =>
+            l.enabled ? (
+              <span key={l.id} className="level-nav__tab level-nav__tab--active" aria-current="page">
+                {l.label}
+              </span>
+            ) : (
+              <span
+                key={l.id}
+                className="level-nav__tab level-nav__tab--planned"
+                title="Planned — not available in this milestone"
+                aria-disabled="true"
+              >
+                {l.label}
+                <span className="level-nav__badge">planned</span>
+              </span>
+            ),
+          )}
+        </nav>
+        <button
+          type="button"
+          className="btn btn--ghost"
+          onClick={toggleTheme}
+          aria-pressed={theme === "dark"}
+        >
+          {theme === "light" ? "Dark" : "Light"}
+        </button>
       </header>
 
-      <nav className="level-nav" aria-label="C4 diagram levels">
-        {levels.map((l) =>
-          l.enabled ? (
-            <button
-              key={l.id}
-              type="button"
-              className="level-nav__tab level-nav__tab--active"
-              aria-current="page"
-            >
-              {l.label}
-            </button>
-          ) : (
-            <button
-              key={l.id}
-              type="button"
-              className="level-nav__tab"
-              disabled
-              title="Planned — not available in this milestone"
-            >
-              {l.label}
-              <span className="level-nav__badge">planned</span>
-            </button>
-          ),
-        )}
-      </nav>
+      <div className="hud-toolbar" role="group" aria-label="Simulation controls">
+        <button type="button" className="btn" onClick={onStart} disabled={sim.started}>
+          Start
+        </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={onNext}
+          disabled={!sim.started || sim.finished}
+        >
+          Next
+        </button>
+        <button
+          type="button"
+          className="btn btn--ghost"
+          onClick={onReset}
+          disabled={!sim.started && sim.stepIndex === 0}
+        >
+          Reset
+        </button>
+        <span className="hud-toolbar__progress" role="status" aria-live="polite">
+          {progress}
+        </span>
+      </div>
 
-      <main>
-        <section className="sim-controls" aria-label="Simulation controls">
-          <div className="sim-controls__buttons">
-            <button type="button" className="btn" onClick={onStart} disabled={sim.started}>
-              Start
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={onNext}
-              disabled={!sim.started || sim.finished}
-            >
-              Next
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={onReset}
-              disabled={!sim.started && sim.stepIndex === 0}
-            >
-              Reset
-            </button>
-          </div>
-          <div className="sim-controls__status" role="status" aria-live="polite">
-            <span className="sim-controls__progress">{progress}</span>
-            <span className="sim-controls__text">{sim.step.status}</span>
-          </div>
-        </section>
-
-        <section className="diagram-layout" aria-label="System context diagram">
-          <div className="diagram-column">
-            <ContextDiagram
-              selectedId={selectedId}
-              highlightedNodeIds={sim.step.highlightedNodeIds}
-              highlightedEdgeIds={sim.step.highlightedEdgeIds}
-              onSelect={setSelectedId}
-              theme={theme}
-            />
-          </div>
-          <DetailPanel selectedId={selectedId} />
-        </section>
-
-        <LifecycleSection
-          activeOrder={sim.started ? sim.stepIndex : 0}
-          selectedStageId={selectedStageId}
-          onSelect={setSelectedStageId}
-        />
-
-        <details className="diagram-contents">
-          <summary>Diagram contents (text alternative)</summary>
-          <ContextList selectedId={selectedId} onSelect={setSelectedId} />
-        </details>
-      </main>
+      <DetailPanel selectedId={selectedId} onSelect={setSelectedId} />
     </div>
   );
 }

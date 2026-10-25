@@ -1,4 +1,5 @@
 import { contextNodes, contextRelationships } from "./contextData";
+import { lifecycleStages } from "../lifecycle/lifecycleData";
 
 interface ContextListProps {
   selectedId: string | null;
@@ -48,6 +49,25 @@ export function ContextList({ selectedId, onSelect }: ContextListProps) {
             </li>
           );
         })}
+      </ul>
+
+      <h3 className="context-list__subheading">Lifecycle stages</h3>
+      <ul>
+        {lifecycleStages.map((s) => (
+          <li key={s.id}>
+            <button
+              type="button"
+              className={`context-list__item${selectedId === s.id ? " context-list__item--selected" : ""}`}
+              aria-pressed={selectedId === s.id}
+              onClick={() => onSelect(s.id)}
+            >
+              <strong>
+                {s.order}. {s.name}
+              </strong>{" "}
+              — {s.summary}
+            </button>
+          </li>
+        ))}
       </ul>
     </section>
   );
