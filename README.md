@@ -47,6 +47,21 @@ A header stepper (Welcome → Set up → Validate → Simulate) shows progress.
 back to setup without losing your choices. Reduced-motion preferences skip
 the staggered check animation.
 
+### Architecture levels
+
+Once the simulation is running, a **Level 1 / Level 2** switch appears in the
+header. The two dimensions stay distinct: lifecycle *stages* are the eight
+steps; architecture *levels* are the views used to explore them.
+
+- **Level 1** — the lifecycle canvas described below.
+- **Level 2 — Container view** — the selected stage expanded into a C4-style
+  container diagram: simulated services, data stores, externals, and stage
+  handoffs connected by labeled arrows (including decision branches like
+  "reject → retrain" and feedback returns). Clicking a container opens the
+  same on-canvas Overview → Inputs → Processing → Outputs window. A compact
+  stage strip plus ‹ › arrows lets you move between stages without leaving
+  Level 2 — and switching levels always preserves the selected stage.
+
 The lifecycle itself:
 
 - **Serpentine sequence** — eight provider-neutral stages on a precise 4×2
@@ -88,6 +103,11 @@ src/
       WorkspaceCanvas.tsx        React Flow canvas: stage chain, feedback loop, camera control
       StageNode.tsx              compact lifecycle stage node
       StageDetailNode.tsx        inline Input/Output card attached to the selected stage
+    containers/
+      containerData.ts           per-stage container diagrams (nodes, labeled edges, details)
+      ContainerNode.tsx          service/store/external/handoff node renderer
+      ContainerDetailNode.tsx    on-canvas Overview→Inputs→Processing→Outputs card
+      Level2Canvas.tsx           container-view canvas: diagram, legend, camera
     lifecycle/
       lifecycleData.ts           the eight provider-neutral lifecycle stages (inputs/outputs)
     preflight/

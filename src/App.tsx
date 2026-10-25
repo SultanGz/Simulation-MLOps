@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Node } from "@xyflow/react";
 import { WorkspaceCanvas } from "./features/canvas/WorkspaceCanvas";
+import { Level2Canvas } from "./features/containers/Level2Canvas";
 import { lifecycleStages } from "./features/lifecycle/lifecycleData";
 import {
   createSimulation,
@@ -22,6 +23,7 @@ import type {
 
 type Theme = "light" | "dark";
 type Phase = "welcome" | "setup" | "validate" | "sim";
+type Level = "l1" | "l2";
 
 const phases = [
   { id: "welcome", label: "Welcome" },
@@ -38,6 +40,8 @@ export default function App() {
   const [config, setConfig] = useState<EnvConfig>(presetConfig);
   const [checks, setChecks] = useState<DisplayedCheck[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>("define-problem");
+  const [level, setLevel] = useState<Level>("l1");
+  const [selectedContainerId, setSelectedContainerId] = useState<string | null>(null);
   const [sim, setSim] = useState<SimulationState>(() => createSimulation());
   const timers = useRef<number[]>([]);
 
@@ -133,6 +137,26 @@ export default function App() {
     setSim((s) => ({ ...s, stepIndex: 0, started: false, finished: false }));
     setSelectedId("define-problem");
   }, []);
+
+  /* ----- level + stage navigation ----- */
+
+  const currentStage =
+    lifecycleStages.find((s) => s.id === selectedId) ?? lifecycleStages[0];
+  const goStage = useCallback(
+    (delta: number) => {
+      const next = Math.min(
+        Math.max(currentStage.order - 1 + delta, 0),
+        lifecycleStages.length - 1,
+      );
+      setSelectedId(lifecycleStages[next].id);
+      setSelectedContainerId(null);
+    },
+    [currentStage.order],
+  );
+  const pickStage = useCallback((id: string) => {
+    setSelectedId(id);
+    setSelectedContainerId(null);
+  }, []);
   const toggleTheme = useCallback(
     () => setTheme((t) => (t === "light" ? "dark" : "light")),
     [],
@@ -158,32 +182,62 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <WorkspaceCanvas
-        selectedId={selectedId}
-        activeOrder={phase === "sim" && sim.started ? sim.stepIndex : 0}
-        finished={phase === "sim" && sim.finished}
-        preflightNode={preflightNode}
-        focusId={phase === "sim" ? null : PREFLIGHT_NODE_ID}
-        showLifecycle={phase === "sim"}
-        onSelect={setSelectedId}
-        theme={theme}
-      />
+      {level === "l1" || phase !== "sim" ? (
+        <WorkspaceCanvas
+          selectedId={selectedId}
+          activeOrder={phase === "sim" && sim.started ? sim.stepIndex : 0}
+          finished={phase === "sim" && sim.finished}
+          preflightNode={preflightNode}
+          focusId={phase === "sim" ? null : PREFLIGHT_NODE_ID}
+          showLifecycle={phase === "sim"}
+          onSelect={setSelectedId}
+          theme={theme}
+        />
+      ) : (
+        <Level2Canvas
+          stageId={currentStage.id}
+          selectedContainerId={selectedContainerId}
+          onSelect={setSelectedContainerId}
+          theme={theme}
+        />
+      )}
 
       <header className="hud-header hud-header--compact">
         <div className="hud-header__brand">
           <h1>simulation-MLOps</h1>
         </div>
-        <ol className="preflight-steps" aria-label="Progress">
-          {phases.map((p) => (
-            <li
-              key={p.id}
-              className={`preflight-steps__item${p.id === phase ? " preflight-steps__item--current" : ""}`}
-              aria-current={p.id === phase ? "step" : undefined}
+        {phase === "sim" ? (
+          <div className="level-switch" role="group" aria-label="Architecture level">
+            <button
+              type="button"
+              className={`level-switch__btn${level === "l1" ? " level-switch__btn--active" : ""}`}
+              aria-pressed={level === "l1"}
+              onClick={() => setLevel("l1")}
             >
-              {p.label}
-            </li>
-          ))}
-        </ol>
+              Level 1
+            </button>
+            <button
+              type="button"
+              className={`level-switch__btn${level === "l2" ? " level-switch__btn--active" : ""}`}
+              aria-pressed={level === "l2"}
+              onClick={() => setLevel("l2")}
+            >
+              Level 2
+            </button>
+          </div>
+        ) : (
+          <ol className="preflight-steps" aria-label="Progress">
+            {phases.map((p) => (
+              <li
+                key={p.id}
+                className={`preflight-steps__item${p.id === phase ? " preflight-steps__item--current" : ""}`}
+                aria-current={p.id === phase ? "step" : undefined}
+              >
+                {p.label}
+              </li>
+            ))}
+          </ol>
+        )}
         <button
           type="button"
           className="btn btn--ghost"
@@ -194,31 +248,71 @@ export default function App() {
         </button>
       </header>
 
-      {phase === "sim" && (
-        <div className="hud-toolbar" role="group" aria-label="Simulation controls">
-          <button
-            type="button"
-            className="btn"
-            onClick={onNext}
-            disabled={!sim.started || sim.finished}
-          >
-            Next
-          </button>
-          <button type="button" className="btn btn--ghost" onClick={onReset}>
-            Reset simulation
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={() => setPhase("setup")}
-          >
-            Back to setup
-          </button>
-          <span className="hud-toolbar__progress" role="status" aria-live="polite">
-            {progress}
-          </span>
-        </div>
-      )}
+      {phase === "sim" &&
+        (level === "l1" ? (
+          <div className="hud-toolbar" role="group" aria-label="Simulation controls">
+            <button
+              type="button"
+              className="btn"
+              onClick={onNext}
+              disabled={!sim.started || sim.finished}
+            >
+              Next
+            </button>
+            <button type="button" className="btn btn--ghost" onClick={onReset}>
+              Reset simulation
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => setPhase("setup")}
+            >
+              Back to setup
+            </button>
+            <span className="hud-toolbar__progress" role="status" aria-live="polite">
+              {progress}
+            </span>
+          </div>
+        ) : (
+          <div className="hud-toolbar" role="group" aria-label="Stage navigation">
+            <button
+              type="button"
+              className="btn btn--ghost stage-nav__arrow"
+              onClick={() => goStage(-1)}
+              disabled={currentStage.order === 1}
+              aria-label="Previous stage"
+            >
+              ‹
+            </button>
+            <ol className="stage-nav" aria-label="Lifecycle stages">
+              {lifecycleStages.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    className={`stage-nav__item${s.id === currentStage.id ? " stage-nav__item--current" : ""}`}
+                    aria-current={s.id === currentStage.id ? "step" : undefined}
+                    title={s.name}
+                    onClick={() => pickStage(s.id)}
+                  >
+                    {s.order}
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <button
+              type="button"
+              className="btn btn--ghost stage-nav__arrow"
+              onClick={() => goStage(1)}
+              disabled={currentStage.order === lifecycleStages.length}
+              aria-label="Next stage"
+            >
+              ›
+            </button>
+            <span className="hud-toolbar__progress" role="status" aria-live="polite">
+              Stage {currentStage.order} of {lifecycleStages.length} · {currentStage.name}
+            </span>
+          </div>
+        ))}
     </div>
   );
 }
