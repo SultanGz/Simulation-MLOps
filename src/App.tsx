@@ -164,6 +164,7 @@ export default function App() {
         finished={phase === "sim" && sim.finished}
         preflightNode={preflightNode}
         focusId={phase === "sim" ? null : PREFLIGHT_NODE_ID}
+        showLifecycle={phase === "sim"}
         onSelect={setSelectedId}
         theme={theme}
       />

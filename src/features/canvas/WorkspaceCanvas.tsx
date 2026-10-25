@@ -64,6 +64,8 @@ interface WorkspaceCanvasProps {
   preflightNode?: Node;
   /** Node id the camera should frame (preflight scenes); null = stage logic. */
   focusId?: string | null;
+  /** Mount the lifecycle nodes only while the simulation scene is active. */
+  showLifecycle: boolean;
   onSelect: (id: string | null) => void;
   theme: "light" | "dark";
 }
@@ -74,12 +76,16 @@ function Canvas({
   finished,
   preflightNode,
   focusId,
+  showLifecycle,
   onSelect,
   theme,
 }: WorkspaceCanvasProps) {
   const { fitView } = useReactFlow();
 
   const nodes: Node[] = useMemo(() => {
+    const sceneNodes: Node[] = preflightNode ? [preflightNode] : [];
+    if (!showLifecycle) return sceneNodes;
+
     const stages: StageFlowNode[] = lifecycleStages.map((stage) => {
       const state =
         stage.order < activeOrder || (finished && stage.order === 8)
@@ -117,12 +123,8 @@ function Canvas({
       });
     }
 
-    return [
-      ...(preflightNode ? [preflightNode] : []),
-      ...stages,
-      ...detailNodes,
-    ];
-  }, [selectedId, activeOrder, finished, preflightNode]);
+    return [...sceneNodes, ...stages, ...detailNodes];
+  }, [selectedId, activeOrder, finished, preflightNode, showLifecycle]);
 
   const edges: Edge[] = useMemo(() => {
     // Serpentine chain: row 1 left→right, down at 4→5, row 2 right→left.
@@ -252,7 +254,9 @@ function Canvas({
       >
         <Background gap={28} />
         <Controls showInteractive={false} position="bottom-left" />
-        <MiniMap position="bottom-right" pannable zoomable className="workspace-minimap" />
+        {showLifecycle && (
+          <MiniMap position="bottom-right" pannable zoomable className="workspace-minimap" />
+        )}
       </ReactFlow>
       <button
         type="button"
