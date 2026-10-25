@@ -25,6 +25,7 @@ export function StageNode({ data, selected }: NodeProps<StageFlowNode>) {
       <Handle id="t-left" type="target" position={Position.Left} className="context-handle" />
       <Handle id="t-right" type="target" position={Position.Right} className="context-handle" />
       <Handle id="t-top" type="target" position={Position.Top} className="context-handle" />
+      <Handle id="t-bottom" type="target" position={Position.Bottom} className="context-handle" />
       <Handle id="s-left" type="source" position={Position.Left} className="context-handle" />
       <Handle id="s-right" type="source" position={Position.Right} className="context-handle" />
       <Handle id="s-bottom" type="source" position={Position.Bottom} className="context-handle" />

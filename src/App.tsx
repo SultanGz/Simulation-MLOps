@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { WorkspaceCanvas } from "./features/canvas/WorkspaceCanvas";
-import { DetailPanel } from "./features/context/DetailPanel";
 import { lifecycleStages } from "./features/lifecycle/lifecycleData";
 import {
   initialSimulationState,
@@ -10,18 +9,11 @@ import {
   type SimulationState,
 } from "./features/simulation/simulation";
 
-const levels = [
-  { id: 1, label: "Level 1 · System Context", enabled: true },
-  { id: 2, label: "Level 2 · Containers", enabled: false },
-  { id: 3, label: "Level 3 · Components", enabled: false },
-  { id: 4, label: "Level 4 · Code", enabled: false },
-];
-
 type Theme = "light" | "dark";
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>("light");
-  const [selectedId, setSelectedId] = useState<string | null>("system");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sim, setSim] = useState<SimulationState>(initialSimulationState);
 
   useEffect(() => {
@@ -36,7 +28,7 @@ export default function App() {
   const onNext = useCallback(() => setSim((s) => advance(s)), []);
   const onReset = useCallback(() => {
     setSim(reset());
-    setSelectedId("system");
+    setSelectedId(null);
   }, []);
 
   const progress = !sim.started
@@ -51,36 +43,15 @@ export default function App() {
         selectedId={selectedId}
         activeStageId={sim.step.activeStageId}
         activeOrder={sim.started ? sim.stepIndex : 0}
-        highlightedNodeIds={sim.step.highlightedNodeIds}
-        highlightedEdgeIds={sim.step.highlightedEdgeIds}
+        finished={sim.finished}
         onSelect={setSelectedId}
         theme={theme}
       />
 
-      <header className="hud-header">
+      <header className="hud-header hud-header--compact">
         <div className="hud-header__brand">
           <h1>simulation-MLOps</h1>
-          <p>Learn the MLOps lifecycle through guided in-browser simulations.</p>
         </div>
-        <nav className="level-nav" aria-label="C4 diagram levels">
-          {levels.map((l) =>
-            l.enabled ? (
-              <span key={l.id} className="level-nav__tab level-nav__tab--active" aria-current="page">
-                {l.label}
-              </span>
-            ) : (
-              <span
-                key={l.id}
-                className="level-nav__tab level-nav__tab--planned"
-                title="Planned — not available in this milestone"
-                aria-disabled="true"
-              >
-                {l.label}
-                <span className="level-nav__badge">planned</span>
-              </span>
-            ),
-          )}
-        </nav>
         <button
           type="button"
           className="btn btn--ghost"
@@ -115,8 +86,6 @@ export default function App() {
           {progress}
         </span>
       </div>
-
-      <DetailPanel selectedId={selectedId} onSelect={setSelectedId} />
     </div>
   );
 }
