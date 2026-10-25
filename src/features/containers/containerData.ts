@@ -57,8 +57,8 @@ export const stageDiagrams: StageDiagram[] = [
     stageId: "define-problem",
     nodes: [
       {
-        id: "intake", kind: "service", x: 0, y: 120,
-        name: "Request intake", responsibility: "Captures needs and constraints",
+        id: "intake", kind: "external", x: 0, y: 120,
+        name: "Request intake", responsibility: "Incoming needs and constraints",
         detail: {
           overview: "Collects the user or business need and its constraints.",
           inputs: [io("Business need", "The problem or decision to support"), io("Constraints", "Latency, cost, fairness limits")],
@@ -109,6 +109,16 @@ export const stageDiagrams: StageDiagram[] = [
   {
     stageId: "acquire-data",
     nodes: [
+      {
+        id: "from-stage-1", kind: "handoff", x: 0, y: -60,
+        name: "← Stage 1", responsibility: "Task specification arrives",
+        detail: {
+          overview: "Incoming handoff: the versioned task specification.",
+          inputs: [io("Approved spec", "From the spec store")],
+          processing: "Attaches the task and success criteria to this stage.",
+          outputs: [io("Data requirements", "Drives source selection")],
+        },
+      },
       {
         id: "connectors", kind: "service", x: 0, y: 120,
         name: "Source connectors", responsibility: "Reads candidate data sources",
@@ -181,11 +191,12 @@ export const stageDiagrams: StageDiagram[] = [
       },
     ],
     edges: [
+      { id: "e0", source: "from-stage-1", target: "connectors", label: "data requirements", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e1", source: "connectors", target: "governance", label: "candidate sources", kind: "flow" },
       { id: "e2", source: "governance", target: "raw-store", label: "permitted data", kind: "flow" },
       { id: "e3", source: "raw-store", target: "profiling", label: "raw dataset", kind: "flow" },
       { id: "e4", source: "profiling", target: "catalog", label: "profile + findings", kind: "flow", sourceHandle: "s-bottom", targetHandle: "t-right" },
-      { id: "e5", source: "profiling", target: "to-stage-3", label: "suitable ✓", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
+      { id: "e5", source: "profiling", target: "to-stage-3", label: "suitable data + findings", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e6", source: "profiling", target: "back-stage-1", label: "unsuitable → redefine", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-right" },
       { id: "e7", source: "profiling", target: "connectors", label: "reselect sources", kind: "decision", sourceHandle: "s-top", targetHandle: "t-top" },
     ],
@@ -195,6 +206,16 @@ export const stageDiagrams: StageDiagram[] = [
   {
     stageId: "prepare-data",
     nodes: [
+      {
+        id: "from-stage-2", kind: "handoff", x: 0, y: -60,
+        name: "← Stage 2", responsibility: "Selected dataset arrives",
+        detail: {
+          overview: "Incoming handoff: the profiled, suitable dataset.",
+          inputs: [io("Selected dataset", "From acquisition"), io("Quality findings", "From the catalog")],
+          processing: "Attaches data and requirements to this stage.",
+          outputs: [io("Selected dataset", "Input to the pipeline")],
+        },
+      },
       {
         id: "pipeline", kind: "service", x: 0, y: 120,
         name: "Transformation pipeline", responsibility: "Cleans and transforms",
@@ -257,6 +278,7 @@ export const stageDiagrams: StageDiagram[] = [
       },
     ],
     edges: [
+      { id: "e0", source: "from-stage-2", target: "pipeline", label: "selected dataset", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e1", source: "pipeline", target: "validation", label: "transformed data", kind: "flow" },
       { id: "e2", source: "validation", target: "features", label: "checked data ✓", kind: "flow" },
       { id: "e3", source: "features", target: "feature-store", label: "feature set", kind: "flow" },
@@ -270,6 +292,16 @@ export const stageDiagrams: StageDiagram[] = [
   {
     stageId: "train-experiments",
     nodes: [
+      {
+        id: "from-stage-3", kind: "handoff", x: 0, y: -60,
+        name: "← Stage 3", responsibility: "Prepared dataset arrives",
+        detail: {
+          overview: "Incoming handoff: versioned features and splits.",
+          inputs: [io("Prepared dataset", "From the feature store")],
+          processing: "Attaches data, splits, and lineage to this stage.",
+          outputs: [io("Training input", "Consumed by the orchestrator")],
+        },
+      },
       {
         id: "orchestrator", kind: "service", x: 0, y: 120,
         name: "Training orchestrator", responsibility: "Schedules experiment runs",
@@ -322,6 +354,7 @@ export const stageDiagrams: StageDiagram[] = [
       },
     ],
     edges: [
+      { id: "e0", source: "from-stage-3", target: "orchestrator", label: "prepared dataset", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e1", source: "orchestrator", target: "runtime", label: "job + config", kind: "flow" },
       { id: "e2", source: "runtime", target: "tracker", label: "params + metrics", kind: "flow" },
       { id: "e3", source: "runtime", target: "artifact-store", label: "model artifacts", kind: "flow", sourceHandle: "s-bottom", targetHandle: "t-left" },
@@ -334,6 +367,16 @@ export const stageDiagrams: StageDiagram[] = [
   {
     stageId: "evaluate-validate",
     nodes: [
+      {
+        id: "from-stage-4", kind: "handoff", x: 0, y: -60,
+        name: "← Stage 4", responsibility: "Candidate models arrive",
+        detail: {
+          overview: "Incoming handoff: candidates with run metadata.",
+          inputs: [io("Candidate models", "From the artifact store"), io("Run records", "From the tracker")],
+          processing: "Bundles candidates and their experiment lineage.",
+          outputs: [io("Candidate models", "Scored by the evaluation service")],
+        },
+      },
       {
         id: "eval-data", kind: "store", x: 0, y: 120,
         name: "Evaluation data", responsibility: "Held-out and slice datasets",
@@ -396,6 +439,7 @@ export const stageDiagrams: StageDiagram[] = [
       },
     ],
     edges: [
+      { id: "e0", source: "from-stage-4", target: "eval-service", label: "candidate + metadata", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e1", source: "eval-data", target: "eval-service", label: "eval slices", kind: "flow" },
       { id: "e2", source: "eval-service", target: "results-store", label: "scores + slices", kind: "flow" },
       { id: "e3", source: "results-store", target: "approval", label: "evaluation report", kind: "flow" },
@@ -408,6 +452,16 @@ export const stageDiagrams: StageDiagram[] = [
   {
     stageId: "register-package-test",
     nodes: [
+      {
+        id: "from-stage-5", kind: "handoff", x: 0, y: -60,
+        name: "← Stage 5", responsibility: "Approved model arrives",
+        detail: {
+          overview: "Incoming handoff: the approved candidate with evidence.",
+          inputs: [io("Approved model", "From the approval gate"), io("Evaluation report", "Attached as lineage")],
+          processing: "Attaches approval evidence to this stage.",
+          outputs: [io("Approved model", "Registered for release")],
+        },
+      },
       {
         id: "registry", kind: "store", x: 0, y: 120,
         name: "Model registry", responsibility: "Versioned model entries",
@@ -460,6 +514,7 @@ export const stageDiagrams: StageDiagram[] = [
       },
     ],
     edges: [
+      { id: "e0", source: "from-stage-5", target: "registry", label: "approved model", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e1", source: "registry", target: "build", label: "versioned entry", kind: "flow" },
       { id: "e2", source: "build", target: "test-runner", label: "deployable package", kind: "flow" },
       { id: "e3", source: "test-runner", target: "test-store", label: "test results", kind: "flow", sourceHandle: "s-bottom", targetHandle: "t-top" },
@@ -472,6 +527,16 @@ export const stageDiagrams: StageDiagram[] = [
   {
     stageId: "deploy-serve",
     nodes: [
+      {
+        id: "from-stage-6", kind: "handoff", x: 0, y: -60,
+        name: "← Stage 6", responsibility: "Approved package arrives",
+        detail: {
+          overview: "Incoming handoff: the tested deployable package.",
+          inputs: [io("Approved package", "From the test runner")],
+          processing: "Attaches the package and test evidence to this stage.",
+          outputs: [io("Approved package", "Deployed by the release service")],
+        },
+      },
       {
         id: "release", kind: "service", x: 0, y: 120,
         name: "Release service", responsibility: "Rolls out the package",
@@ -524,6 +589,7 @@ export const stageDiagrams: StageDiagram[] = [
       },
     ],
     edges: [
+      { id: "e0", source: "from-stage-6", target: "release", label: "approved package", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e1", source: "deploy-config", target: "release", label: "target config", kind: "flow", sourceHandle: "s-top", targetHandle: "t-bottom" },
       { id: "e2", source: "release", target: "endpoint", label: "release + record", kind: "flow" },
       { id: "e3", source: "endpoint", target: "consumer", label: "predictions", kind: "flow" },
@@ -535,6 +601,16 @@ export const stageDiagrams: StageDiagram[] = [
   {
     stageId: "monitor-respond",
     nodes: [
+      {
+        id: "from-stage-7", kind: "handoff", x: 0, y: -60,
+        name: "← Stage 7", responsibility: "Serving telemetry arrives",
+        detail: {
+          overview: "Incoming handoff: predictions and operating data.",
+          inputs: [io("Outputs + telemetry", "Streamed from the endpoint")],
+          processing: "Attaches the live signal feed to this stage.",
+          outputs: [io("Monitoring input", "Collected by the telemetry service")],
+        },
+      },
       {
         id: "telemetry", kind: "service", x: 0, y: 120,
         name: "Telemetry collector", responsibility: "Predictions and ops data",
@@ -607,6 +683,7 @@ export const stageDiagrams: StageDiagram[] = [
       },
     ],
     edges: [
+      { id: "e0", source: "from-stage-7", target: "telemetry", label: "outputs + telemetry", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e1", source: "telemetry", target: "monitor", label: "predictions + ops data", kind: "flow" },
       { id: "e2", source: "monitor", target: "alerts", label: "threshold breach", kind: "flow" },
       { id: "e3", source: "monitor", target: "feedback-queue", label: "drift / quality drop", kind: "flow", sourceHandle: "s-bottom", targetHandle: "t-top" },
