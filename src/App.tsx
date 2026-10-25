@@ -1,7 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ContextDiagram } from "./features/context/ContextDiagram";
 import { DetailPanel } from "./features/context/DetailPanel";
 import { ContextList } from "./features/context/ContextList";
+import { LifecycleSection } from "./features/lifecycle/LifecycleSection";
+import { lifecycleStages } from "./features/lifecycle/lifecycleData";
 import {
   initialSimulationState,
   start,
@@ -17,22 +19,57 @@ const levels = [
   { id: 4, label: "Level 4 · Code", enabled: false },
 ];
 
+type Theme = "light" | "dark";
+
 export default function App() {
+  const [theme, setTheme] = useState<Theme>("light");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [sim, setSim] = useState<SimulationState>(initialSimulationState);
 
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+
+  const toggleTheme = useCallback(
+    () => setTheme((t) => (t === "light" ? "dark" : "light")),
+    [],
+  );
   const onStart = useCallback(() => setSim(start), []);
   const onNext = useCallback(() => setSim((s) => advance(s)), []);
-  const onReset = useCallback(() => setSim(reset()), []);
+  const onReset = useCallback(() => {
+    setSim(reset());
+    setSelectedStageId(null);
+  }, []);
+
+  const activeStage = sim.step.activeStageId
+    ? lifecycleStages.find((s) => s.id === sim.step.activeStageId)
+    : undefined;
+  const shownStage =
+    selectedStageId != null
+      ? lifecycleStages.find((s) => s.id === selectedStageId)
+      : activeStage;
 
   return (
     <div className="app">
       <header className="site-header">
-        <h1 className="site-header__title">simulation-MLOps</h1>
-        <p className="site-header__purpose">
-          Learn the MLOps lifecycle by stepping through guided, in-browser
-          simulations — no accounts, no external services.
-        </p>
+        <div className="site-header__row">
+          <div>
+            <h1 className="site-header__title">simulation-MLOps</h1>
+            <p className="site-header__purpose">
+              Learn the MLOps lifecycle by stepping through guided, in-browser
+              simulations — no accounts, no external services.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={toggleTheme}
+            aria-pressed={theme === "dark"}
+          >
+            {theme === "light" ? "Dark theme" : "Light theme"}
+          </button>
+        </div>
       </header>
 
       <nav className="level-nav" aria-label="C4 diagram levels">
@@ -87,6 +124,16 @@ export default function App() {
           <div className="sim-controls__status" role="status" aria-live="polite">
             <strong>{sim.step.status}</strong>
             <p>{sim.step.description}</p>
+            {shownStage && (
+              <p className="sim-controls__stage-io">
+                <span>
+                  <strong>Input:</strong> {shownStage.input}
+                </span>
+                <span>
+                  <strong>Output:</strong> {shownStage.output}
+                </span>
+              </p>
+            )}
           </div>
         </section>
 
@@ -96,9 +143,16 @@ export default function App() {
             highlightedNodeIds={sim.step.highlightedNodeIds}
             highlightedEdgeIds={sim.step.highlightedEdgeIds}
             onSelect={setSelectedId}
+            theme={theme}
           />
           <DetailPanel selectedId={selectedId} />
         </section>
+
+        <LifecycleSection
+          activeStageId={sim.step.activeStageId}
+          selectedStageId={selectedStageId}
+          onSelect={setSelectedStageId}
+        />
 
         <ContextList selectedId={selectedId} onSelect={setSelectedId} />
       </main>

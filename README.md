@@ -34,9 +34,16 @@ backend services are needed at runtime — all scenario data is bundled.
   - *Instructor* (secondary actor) → *simulation-MLOps*
   - Fixed positions (guided, not an editor), pan/zoom, fit-to-view, Reset view.
   - Selecting any element shows a plain-language explanation in the detail panel.
-- **Sample simulation**: Start begins a seeded scenario, Next steps through a
-  few visible state changes (highlighted elements + status text), Reset
-  restores the initial state. Fully deterministic — no timers or randomness.
+- **The MLOps lifecycle**: a dedicated section with the eight provider-neutral
+  stages the site simulates (Define → Acquire → Prepare → Train → Evaluate →
+  Register/package/test → Deploy → Monitor/respond). Each card shows the
+  stage's input and output in plain language.
+- **Sample simulation**: Start begins a seeded scenario and Next steps through
+  the eight lifecycle stages in order, highlighting the active stage and
+  diagram elements; Reset restores the idle state. Fully deterministic — no
+  timers or randomness.
+- **Dark theme**: light by default, with a header toggle (the diagram follows
+  the theme via `@xyflow/react`'s `colorMode`).
 - **Accessibility**: focusable diagram elements, real `<button>` controls, a
   `role="status"` live region for simulation status, and a full text/list
   alternative to the diagram. Responsive down to narrow screens.
@@ -54,8 +61,11 @@ src/
       ContextNode.tsx            custom node renderer
       DetailPanel.tsx            explanation panel for the selected element
       ContextList.tsx            text alternative to the diagram
+    lifecycle/
+      lifecycleData.ts           the eight provider-neutral lifecycle stages (inputs/outputs)
+      LifecycleSection.tsx       selectable stage cards; highlights the active stage
     simulation/
-      simulation.ts              deterministic Start/Next/Reset state machine
+      simulation.ts              deterministic Start/Next/Reset state machine (one step per stage)
 ```
 
 ## Choices and scope notes

@@ -27,9 +27,10 @@ interface ContextDiagramProps {
   highlightedNodeIds: string[];
   highlightedEdgeIds: string[];
   onSelect: (id: string | null) => void;
+  theme: "light" | "dark";
 }
 
-function Flow({ selectedId, highlightedNodeIds, highlightedEdgeIds, onSelect }: ContextDiagramProps) {
+function Flow({ selectedId, highlightedNodeIds, highlightedEdgeIds, onSelect, theme }: ContextDiagramProps) {
   const { fitView } = useReactFlow();
 
   const nodes: Node[] = useMemo(
@@ -65,7 +66,8 @@ function Flow({ selectedId, highlightedNodeIds, highlightedEdgeIds, onSelect }: 
           selected: selectedId === rel.id,
           markerEnd: { type: MarkerType.ArrowClosed },
           className: highlighted ? "context-edge--highlighted" : undefined,
-          labelStyle: { fontSize: 11 },
+          labelStyle: { fontSize: 11, fill: "var(--ink)" },
+          labelBgStyle: { fill: "var(--paper)" },
           ariaLabel: `Relationship: ${rel.label}`,
           style: highlighted ? { strokeWidth: 2.5 } : undefined,
         };
@@ -89,6 +91,7 @@ function Flow({ selectedId, highlightedNodeIds, highlightedEdgeIds, onSelect }: 
   return (
     <div className="diagram-canvas">
       <ReactFlow
+        colorMode={theme}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}

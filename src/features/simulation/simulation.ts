@@ -1,59 +1,49 @@
 /**
  * Deterministic step-through simulation for the Level 1 context view.
  *
- * The simulation is intentionally small: a fixed, seeded sequence of states
- * that the learner advances with Start/Next and restores with Reset. No
- * network calls, timers, or randomness — every run produces identical steps.
+ * Start begins the sample scenario and Next walks the Learner through the
+ * eight MLOps lifecycle stages in order; Reset restores the idle state.
+ * The sequence is fixed — no timers, randomness, or external calls.
  */
+
+import { lifecycleStages } from "../lifecycle/lifecycleData";
 
 export interface SimulationStep {
   /** Short status line shown in the simulation status strip. */
   status: string;
   /** Plain-language explanation of what just happened. */
   description: string;
-  /** Element ids (nodes) highlighted during this step. */
+  /** Lifecycle stage id highlighted this step, or null when idle. */
+  activeStageId: string | null;
+  /** Context diagram element ids highlighted during this step. */
   highlightedNodeIds: string[];
-  /** Relationship ids (edges) highlighted during this step. */
   highlightedEdgeIds: string[];
 }
 
-export const simulationSteps: SimulationStep[] = [
-  {
-    status: "Idle — press Start to begin the sample scenario",
-    description:
-      "The simulation has not started. Select any element in the diagram to learn what it represents.",
-    highlightedNodeIds: [],
-    highlightedEdgeIds: [],
-  },
-  {
-    status: "Step 1 — Learner selects a scenario",
-    description:
-      "The Learner picks a bundled sample scenario about an MLOps lifecycle decision. The scenario data ships with the site — nothing is fetched from a real service.",
-    highlightedNodeIds: ["learner", "system"],
-    highlightedEdgeIds: ["learner-selects"],
-  },
-  {
-    status: "Step 2 — Simulation advances the lifecycle state",
-    description:
-      "The website applies the Learner's decision to the in-browser scenario state (for example: retraining triggered after simulated drift). Lifecycle stages like data, training, registry, deployment, and monitoring are provider-neutral concepts illustrated with sample data.",
-    highlightedNodeIds: ["system"],
-    highlightedEdgeIds: [],
-  },
-  {
-    status: "Step 3 — Outcome and explanation shown to the Learner",
-    description:
-      "The site shows the simulated outcome, the new lifecycle state, and a plain-language explanation of why the decision mattered.",
-    highlightedNodeIds: ["system", "learner"],
-    highlightedEdgeIds: ["system-explains"],
-  },
-  {
-    status: "Step 4 — Instructor facilitates a walkthrough",
-    description:
-      "An Instructor can open the same view and walk a group through the scenario. The Instructor sees the same diagram and explanations — there is no separate role-specific interface in this milestone.",
-    highlightedNodeIds: ["instructor", "system"],
-    highlightedEdgeIds: ["instructor-facilitates"],
-  },
-];
+const idleStep: SimulationStep = {
+  status: "Idle — press Start to begin the sample scenario",
+  description:
+    "The simulation has not started. Select any element in the diagram or a lifecycle stage below to learn what it represents.",
+  activeStageId: null,
+  highlightedNodeIds: [],
+  highlightedEdgeIds: [],
+};
+
+const stageSteps: SimulationStep[] = lifecycleStages.map((stage) => ({
+  status: `Step ${stage.order} of ${lifecycleStages.length} — ${stage.name}`,
+  description:
+    stage.order === 1
+      ? `The Learner's scenario reaches "${stage.name}": ${stage.summary}`
+      : stage.order === lifecycleStages.length
+        ? `"${stage.name}": ${stage.summary} This closes the loop — the lifecycle can feed back into earlier stages. Press Reset to start over.`
+        : `The simulation advances to "${stage.name}": ${stage.summary}`,
+  activeStageId: stage.id,
+  highlightedNodeIds: stage.order === 1 ? ["learner", "system"] : ["system"],
+  highlightedEdgeIds:
+    stage.order === 1 ? ["learner-selects"] : ["system-explains"],
+}));
+
+export const simulationSteps: SimulationStep[] = [idleStep, ...stageSteps];
 
 export interface SimulationState {
   stepIndex: number;
@@ -64,12 +54,12 @@ export interface SimulationState {
 
 export const initialSimulationState: SimulationState = {
   stepIndex: 0,
-  step: simulationSteps[0],
+  step: idleStep,
   started: false,
   finished: false,
 };
 
-/** Start the simulation: moves from idle to the first active step. */
+/** Start the simulation: moves from idle to the first stage. */
 export function start(state: SimulationState): SimulationState {
   if (state.started) return state;
   return at(1);

@@ -13,6 +13,21 @@
   color-scheme: light;
 }
 
+[data-theme="dark"] {
+  --ink: #e6eaf0;
+  --muted: #9aa4b2;
+  --line: #3a4250;
+  --paper: #1b212c;
+  --wash: #12161d;
+  --accent: #7ba3e0;
+  --accent-soft: #24344d;
+  --person: #1e2f21;
+  --person-line: #6ea56e;
+  --system: var(--accent-soft);
+  --system-line: var(--accent);
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -32,6 +47,14 @@ body {
 }
 
 /* Header */
+
+.site-header__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
 
 .site-header__title {
   margin: 0;
@@ -113,6 +136,15 @@ body {
   margin: 0.25rem 0 0;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.sim-controls__stage-io {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.4rem;
+  margin-top: 0.5rem !important;
 }
 
 .btn {
@@ -286,6 +318,90 @@ body {
 .context-list__item--selected {
   border-color: var(--accent);
   background: var(--accent-soft);
+}
+
+/* Lifecycle stages */
+
+.lifecycle {
+  margin-top: 1.5rem;
+}
+
+.lifecycle__heading {
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem;
+}
+
+.lifecycle__intro {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  max-width: 70ch;
+}
+
+.lifecycle__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.6rem;
+  counter-reset: stage;
+}
+
+.stage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 0.7rem 0.8rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.stage-card--active {
+  border-color: #b07d0f;
+  box-shadow: 0 0 0 3px #f0b42955;
+}
+
+.stage-card--selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.stage-card__order {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stage-card__order::before {
+  content: "Stage ";
+}
+
+.stage-card__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.stage-card__summary {
+  color: var(--muted);
+}
+
+.stage-card__io {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.stage-card__io-label {
+  font-weight: 600;
+  color: var(--ink);
 }
 
 /* Focus visibility everywhere */
