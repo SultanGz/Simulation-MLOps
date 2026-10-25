@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -30,7 +30,7 @@ const GRID_X = 40;
 
 const DETAIL_W = 620;
 const DETAIL_H = 235;
-const DETAIL_GAP_Y = 70;
+const DETAIL_GAP_Y = 90;
 
 /** Stage order → grid position (1-4 left→right, 5-8 right→left). */
 function stagePosition(order: number): { x: number; y: number } {
@@ -54,8 +54,6 @@ function detailPosition(order: number): { x: number; y: number } {
 
 interface WorkspaceCanvasProps {
   selectedId: string | null;
-  /** Stage id active in the simulation, or null when idle. */
-  activeStageId: string | null;
   /** Stage order the simulation is on (0 = idle). */
   activeOrder: number;
   /** True once the simulation has run to the final stage. */
@@ -66,7 +64,6 @@ interface WorkspaceCanvasProps {
 
 function Canvas({
   selectedId,
-  activeStageId,
   activeOrder,
   finished,
   onSelect,
@@ -175,18 +172,27 @@ function Canvas({
 
   /* ----- camera ----- */
 
+  // On mount: composed overview of the whole lifecycle.
+  // After that, the camera frames the selected stage together with its
+  // detail window so the card can never leave the viewport.
+  const firstRender = useRef(true);
   useEffect(() => {
-    if (activeStageId) {
+    if (firstRender.current) {
+      firstRender.current = false;
+      void fitView({ padding: 0.15 });
+      return;
+    }
+    if (selectedId) {
       void fitView({
-        nodes: [{ id: activeStageId }],
-        duration: 600,
-        padding: 1.2,
+        nodes: [{ id: selectedId }, { id: "stage-detail" }],
+        duration: 450,
+        padding: 0.25,
         maxZoom: 1,
       });
     } else {
-      void fitView({ padding: 0.15, duration: 600 });
+      void fitView({ padding: 0.15, duration: 400 });
     }
-  }, [activeStageId, fitView]);
+  }, [selectedId, fitView]);
 
   const resetView = useCallback(() => {
     void fitView({ padding: 0.15, duration: 250 });

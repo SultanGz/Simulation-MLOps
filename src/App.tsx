@@ -13,12 +13,19 @@ type Theme = "light" | "dark";
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>("light");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>("define-problem");
   const [sim, setSim] = useState<SimulationState>(initialSimulationState);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  // Keep the inspected stage in sync with simulation progress; manual
+  // inspection between steps is preserved because this only fires on step
+  // changes.
+  useEffect(() => {
+    if (sim.step.activeStageId) setSelectedId(sim.step.activeStageId);
+  }, [sim.stepIndex, sim.step.activeStageId]);
 
   const toggleTheme = useCallback(
     () => setTheme((t) => (t === "light" ? "dark" : "light")),
@@ -28,7 +35,7 @@ export default function App() {
   const onNext = useCallback(() => setSim((s) => advance(s)), []);
   const onReset = useCallback(() => {
     setSim(reset());
-    setSelectedId(null);
+    setSelectedId("define-problem");
   }, []);
 
   const progress = !sim.started
@@ -41,7 +48,6 @@ export default function App() {
     <div className="app-shell">
       <WorkspaceCanvas
         selectedId={selectedId}
-        activeStageId={sim.step.activeStageId}
         activeOrder={sim.started ? sim.stepIndex : 0}
         finished={sim.finished}
         onSelect={setSelectedId}
