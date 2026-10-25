@@ -24,16 +24,12 @@ type Theme = "light" | "dark";
 export default function App() {
   const [theme, setTheme] = useState<Theme>("light");
   const [selectedId, setSelectedId] = useState<string | null>("system");
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [sim, setSim] = useState<SimulationState>(initialSimulationState);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
-
-  // Keep the detail panel focused on whichever stage the simulation is on.
-  useEffect(() => {
-    if (sim.step.activeStageId) setSelectedId(sim.step.activeStageId);
-  }, [sim.stepIndex, sim.step.activeStageId]);
 
   const toggleTheme = useCallback(
     () => setTheme((t) => (t === "light" ? "dark" : "light")),
@@ -44,6 +40,7 @@ export default function App() {
   const onReset = useCallback(() => {
     setSim(reset());
     setSelectedId("system");
+    setSelectedStageId(null);
   }, []);
 
   const progress = !sim.started
@@ -137,14 +134,15 @@ export default function App() {
               onSelect={setSelectedId}
               theme={theme}
             />
-            <LifecycleSection
-              activeStageId={sim.step.activeStageId}
-              selectedStageId={selectedId}
-              onSelect={setSelectedId}
-            />
           </div>
           <DetailPanel selectedId={selectedId} />
         </section>
+
+        <LifecycleSection
+          activeOrder={sim.started ? sim.stepIndex : 0}
+          selectedStageId={selectedStageId}
+          onSelect={setSelectedStageId}
+        />
 
         <details className="diagram-contents">
           <summary>Diagram contents (text alternative)</summary>

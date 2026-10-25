@@ -35,12 +35,17 @@ backend services are needed at runtime — all scenario data is bundled.
   - *Instructor* (secondary actor) → *simulation-MLOps*
   - Fixed positions (guided, not an editor), pan/zoom, fit-to-view, Reset view.
   - Parallel edges are offset so relationship labels never overlap.
-- **Lifecycle stage strip**: eight compact, selectable pills (number + short
-  name) below the diagram — Define → Acquire → Prepare → Train → Evaluate →
-  Register/package/test → Deploy → Monitor/respond.
+- **Lifecycle section** (full width, below the diagram): all eight stages as a
+  numbered, connected sequence — Define → Acquire → Prepare → Train → Evaluate →
+  Register/package/test → Deploy → Monitor/respond. Completed, current, and
+  upcoming stages are visually distinct; on narrow screens it becomes a
+  vertical timeline.
+- **Stage detail area**: shows the selected stage's one-line summary plus
+  structured Input and Output. Inspecting a stage never advances the
+  simulation — it defaults to stage 1, or follows the active stage while the
+  simulation runs.
 - **Concise detail panel**: the simulation-MLOps system is selected by default;
-  selecting any person, system, relationship, or stage swaps in a short
-  explanation — a stage also shows its plain-language Input and Output.
+  selecting any person, system, or relationship swaps in a short explanation.
 - **Sample simulation**: Start begins a seeded scenario and Next steps through
   the eight lifecycle stages in order, highlighting the active stage (the
   context diagram itself stays a context view — it is not rearranged into a
