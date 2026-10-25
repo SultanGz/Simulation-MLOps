@@ -30,7 +30,7 @@ const GRID_X = 40;
 
 const DETAIL_W = 620;
 const DETAIL_H = 235;
-const DETAIL_GAP_Y = 90;
+const DETAIL_GAP_Y = 140;
 
 /** Stage order → grid position (1-4 left→right, 5-8 right→left). */
 function stagePosition(order: number): { x: number; y: number } {
