@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
   Background,
   Controls,
-  MiniMap,
   useReactFlow,
+  applyNodeChanges,
   MarkerType,
   type Node,
   type Edge,
+  type NodeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { lifecycleStages } from "../lifecycle/lifecycleData";
@@ -30,9 +31,10 @@ const ROW_1_Y = 120;
 const ROW_2_Y = 520;
 const GRID_X = 40;
 
-const DETAIL_W = 620;
-const DETAIL_H = 235;
-const DETAIL_GAP_Y = 140;
+const DETAIL_MAX_W = 480;
+const DETAIL_H = 440;
+const DETAIL_GAP_Y = 60;
+const NARROW_BP = 600;
 
 /** Stage order → grid position (1-4 left→right, 5-8 right→left). */
 function stagePosition(order: number): { x: number; y: number } {
@@ -44,11 +46,18 @@ function stagePosition(order: number): { x: number; y: number } {
  * The detail window parks in the free lane: above row 1, below row 2 —
  * so it can never cover a stage node or a connector edge.
  */
-function detailPosition(order: number): { x: number; y: number } {
+function detailPosition(
+  order: number,
+  width: number,
+): { x: number; y: number } {
   const p = stagePosition(order);
-  const centered = p.x + STAGE_W / 2 - DETAIL_W / 2;
-  const x = Math.max(GRID_X, Math.min(centered, GRID_X + 3 * STAGE_STEP + STAGE_W - DETAIL_W));
-  const y = order <= 4 ? ROW_1_Y - DETAIL_H - DETAIL_GAP_Y : ROW_2_Y + DETAIL_GAP_Y;
+  const centered = p.x + STAGE_W / 2 - width / 2;
+  const x = Math.max(
+    GRID_X,
+    Math.min(centered, GRID_X + 3 * STAGE_STEP + STAGE_W - width),
+  );
+  const y =
+    order <= 4 ? ROW_1_Y - DETAIL_H - DETAIL_GAP_Y : ROW_2_Y + DETAIL_GAP_Y;
   return { x, y };
 }
 
@@ -66,7 +75,10 @@ interface WorkspaceCanvasProps {
   focusId?: string | null;
   /** Mount the lifecycle nodes only while the simulation scene is active. */
   showLifecycle: boolean;
+  playbackRunning?: boolean;
+  showDetails?: boolean;
   onSelect: (id: string | null) => void;
+  onExploreStage?: (id: string) => void;
   theme: "light" | "dark";
 }
 
@@ -77,12 +89,67 @@ function Canvas({
   preflightNode,
   focusId,
   showLifecycle,
+  playbackRunning = false,
+  showDetails = false,
   onSelect,
+  onExploreStage,
   theme,
 }: WorkspaceCanvasProps) {
   const { fitView } = useReactFlow();
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const fitFrame = useRef(0);
 
-  const nodes: Node[] = useMemo(() => {
+  const [viewportW, setViewportW] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setViewportW(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const detailW = Math.min(DETAIL_MAX_W, viewportW - 48);
+  const narrow = viewportW < NARROW_BP;
+
+  const frameRef = useRef<{ nodes: { id: string }[] | null; padding: number }>({
+    nodes: null,
+    padding: 0.15,
+  });
+  const scheduleFit = useCallback(
+    (nodes: { id: string }[] | null, padding: number, duration: number) => {
+      frameRef.current = { nodes, padding };
+      cancelAnimationFrame(fitFrame.current);
+      fitFrame.current = requestAnimationFrame(() => {
+        void fitView({
+          nodes: nodes ?? undefined,
+          padding,
+          maxZoom: 1,
+          duration,
+        });
+      });
+    },
+    [fitView],
+  );
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const observer = new ResizeObserver(() => {
+      const { nodes: targets, padding } = frameRef.current;
+      cancelAnimationFrame(fitFrame.current);
+      fitFrame.current = requestAnimationFrame(() => {
+        void fitView({
+          nodes: targets ?? undefined,
+          padding,
+          maxZoom: 1,
+          duration: 0,
+        });
+      });
+    });
+    observer.observe(canvasRef.current);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(fitFrame.current);
+    };
+  }, [fitView]);
+
+  const generatedNodes: Node[] = useMemo(() => {
     const sceneNodes: Node[] = preflightNode ? [preflightNode] : [];
     if (!showLifecycle) return sceneNodes;
 
@@ -108,14 +175,21 @@ function Canvas({
     // attached to whichever stage is selected.
     const detailNodes: StageDetailFlowNode[] = [];
     const selStage = lifecycleStages.find((s) => s.id === selectedId);
-    if (selStage) {
+    if (showDetails && selStage) {
       const below = selStage.order > 4; // row-2 stages expand below the row
       detailNodes.push({
         id: "stage-detail",
         type: "stageDetail",
-        position: detailPosition(selStage.order),
-        data: { stage: selStage, below },
-        style: { width: DETAIL_W },
+        position: detailPosition(selStage.order, detailW),
+        data: {
+          stage: selStage,
+          below,
+          onClose: () => onSelect(null),
+          onExplore: onExploreStage
+            ? () => onExploreStage(selStage.id)
+            : undefined,
+        },
+        style: { width: detailW },
         selectable: false,
         draggable: false,
         focusable: false,
@@ -124,13 +198,36 @@ function Canvas({
     }
 
     return [...sceneNodes, ...stages, ...detailNodes];
-  }, [selectedId, activeOrder, finished, preflightNode, showLifecycle]);
+  }, [
+    selectedId,
+    activeOrder,
+    finished,
+    preflightNode,
+    showLifecycle,
+    showDetails,
+    detailW,
+    onSelect,
+    onExploreStage,
+  ]);
+
+  const [nodes, setNodes] = useState<Node[]>(generatedNodes);
+  useEffect(() => {
+    setNodes((previous) => {
+      const byId = new Map(previous.map((node) => [node.id, node]));
+      return generatedNodes.map((node) => ({
+        ...node,
+        measured: byId.get(node.id)?.measured ?? node.measured,
+      }));
+    });
+  }, [generatedNodes]);
 
   const edges: Edge[] = useMemo(() => {
+    if (!showLifecycle) return [];
     // Serpentine chain: row 1 left→right, down at 4→5, row 2 right→left.
     const chain: Edge[] = lifecycleStages.slice(1).map((stage) => {
       const prev = lifecycleStages[stage.order - 2];
       const done = stage.order <= activeOrder;
+      const isActive = stage.order === activeOrder;
       const isTurn = stage.order === 5;
       const backwards = stage.order > 5;
       return {
@@ -140,7 +237,23 @@ function Canvas({
         sourceHandle: isTurn ? "s-bottom" : backwards ? "s-left" : "s-right",
         targetHandle: isTurn ? "t-top" : backwards ? "t-right" : "t-left",
         type: "smoothstep",
-        className: done ? "canvas-edge--done" : undefined,
+        label: isActive ? prev.outputs[0]?.name : undefined,
+        labelStyle: isActive
+          ? { fontSize: 10, fill: "var(--muted)" }
+          : undefined,
+        labelBgStyle: isActive ? { fill: "var(--wash)" } : undefined,
+        labelBgPadding: isActive ? ([4, 2] as [number, number]) : undefined,
+        animated:
+          isActive &&
+          playbackRunning &&
+          !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        className: done
+          ? isActive
+            ? "canvas-edge--done simulation-edge--active"
+            : "canvas-edge--done"
+          : isActive
+            ? "simulation-edge--active"
+            : undefined,
         markerEnd: { type: MarkerType.ArrowClosed },
         focusable: false,
       };
@@ -166,7 +279,7 @@ function Canvas({
     // Connector from the selected stage to its attached detail window.
     const detailEdges: Edge[] = [];
     const selStage = lifecycleStages.find((s) => s.id === selectedId);
-    if (selStage) {
+    if (showDetails && selStage) {
       const below = selStage.order > 4;
       detailEdges.push({
         id: "detail-edge",
@@ -182,7 +295,14 @@ function Canvas({
     }
 
     return [...chain, loop, ...detailEdges];
-  }, [selectedId, activeOrder, finished]);
+  }, [
+    selectedId,
+    activeOrder,
+    finished,
+    showLifecycle,
+    showDetails,
+    playbackRunning,
+  ]);
 
   /* ----- camera ----- */
 
@@ -190,53 +310,124 @@ function Canvas({
   // After that, the camera frames the selected stage together with its
   // detail window so the card can never leave the viewport.
   const firstRender = useRef(true);
+  const reducedMotion = () =>
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   useEffect(() => {
     // Preflight scenes take camera priority.
     if (focusId) {
-      void fitView({
-        nodes: [{ id: focusId }],
-        duration: firstRender.current ? 0 : 500,
-        padding: 0.35,
-        maxZoom: 1,
-      });
+      scheduleFit(
+        [{ id: focusId }],
+        0.06,
+        firstRender.current || reducedMotion() ? 0 : 500,
+      );
       firstRender.current = false;
       return;
     }
-    if (firstRender.current) {
+    const selectedStage =
+      showLifecycle && selectedId
+        ? lifecycleStages.find((stage) => stage.id === selectedId)
+        : undefined;
+    if (firstRender.current && !(showDetails && selectedStage)) {
       firstRender.current = false;
-      void fitView({ padding: 0.15 });
+      scheduleFit(null, 0.15, 0);
       return;
     }
-    if (selectedId) {
-      void fitView({
-        nodes: [{ id: selectedId }, { id: "stage-detail" }],
-        duration: 450,
-        padding: 0.25,
-        maxZoom: 1,
-      });
+    firstRender.current = false;
+    if (selectedStage) {
+      const targets =
+        showDetails && narrow
+          ? [{ id: "stage-detail" }]
+          : showDetails
+            ? [{ id: selectedStage.id }, { id: "stage-detail" }]
+            : [{ id: selectedStage.id }];
+      scheduleFit(
+        targets,
+        showDetails && narrow ? 0.06 : 0.25,
+        reducedMotion() ? 0 : 450,
+      );
     } else {
-      void fitView({ padding: 0.15, duration: 400 });
+      scheduleFit(null, 0.15, reducedMotion() ? 0 : 400);
     }
-  }, [selectedId, focusId, fitView]);
+  }, [selectedId, focusId, showDetails, showLifecycle, narrow, scheduleFit]);
+
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      setNodes((previous) => applyNodeChanges(changes, previous));
+      if (
+        !changes.some(
+          (change) => change.type === "dimensions" && change.dimensions,
+        )
+      )
+        return;
+      cancelAnimationFrame(fitFrame.current);
+      fitFrame.current = requestAnimationFrame(() => {
+        const { nodes: targets, padding } = frameRef.current;
+        void fitView({
+          nodes: targets ?? undefined,
+          padding,
+          maxZoom: 1,
+          duration: 0,
+        });
+      });
+    },
+    [fitView],
+  );
 
   const resetView = useCallback(() => {
-    void fitView({ padding: 0.15, duration: 250 });
+    frameRef.current = { nodes: null, padding: 0.15 };
+    void fitView({
+      padding: 0.15,
+      duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? 0
+        : 250,
+    });
   }, [fitView]);
 
   const onNodeClick = useCallback(
-    (_: unknown, node: Node) => onSelect(node.id),
+    (_: unknown, node: Node) => {
+      if (node.type === "lifecycleStage") onSelect(node.id);
+    },
     [onSelect],
+  );
+  const onNodeDoubleClick = useCallback(
+    (_: unknown, node: Node) => {
+      if (node.type !== "lifecycleStage") return;
+      onSelect(node.id);
+      onExploreStage?.(node.id);
+    },
+    [onSelect, onExploreStage],
   );
   const onPaneClick = useCallback(() => onSelect(null), [onSelect]);
 
+  const onCanvasKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key !== "Enter") return;
+      const target = event.target as HTMLElement;
+      if (
+        target.closest("input, textarea, select, button, a, [contenteditable]")
+      )
+        return;
+      const nodeEl = target.closest(".react-flow__node[data-id]");
+      const id = nodeEl?.getAttribute("data-id");
+      if (id && lifecycleStages.some((stage) => stage.id === id)) onSelect(id);
+    },
+    [onSelect],
+  );
+
   return (
-    <div className="workspace-canvas">
+    <div
+      className="workspace-canvas"
+      ref={canvasRef}
+      onKeyDown={onCanvasKeyDown}
+    >
       <ReactFlow
         colorMode={theme}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
         onNodeClick={onNodeClick}
+        onNodeDoubleClick={onNodeDoubleClick}
         onPaneClick={onPaneClick}
         fitView
         fitViewOptions={{ padding: 0.15 }}
@@ -254,9 +445,6 @@ function Canvas({
       >
         <Background gap={28} />
         <Controls showInteractive={false} position="bottom-left" />
-        {showLifecycle && (
-          <MiniMap position="bottom-right" pannable zoomable className="workspace-minimap" />
-        )}
       </ReactFlow>
       <button
         type="button"

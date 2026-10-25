@@ -1,9 +1,9 @@
 # simulation-MLOps
 
 An educational website for interactively learning the MLOps lifecycle through
-guided, in-browser simulations. This milestone ships the **C4 Level 1 (System
-Context)** view only: who uses the system, the system boundary, and how they
-relate — plus a small deterministic sample simulation.
+guided, in-browser simulations: a **lifecycle overview** and per-stage
+**C4-inspired service flows**, plus a small deterministic sample simulation.
+These educational views are not formal C4 System Context or Container diagrams.
 
 ## Run it
 
@@ -26,41 +26,46 @@ backend services are needed at runtime — all scenario data is bundled.
 
 ## What's in this milestone
 
-The app is a **single full-viewport canvas** (React Flow), not a scrolling
-page. The journey runs as on-canvas scenes:
+The app is an **immersive, full-viewport React Flow dashboard**. Setup, help,
+stages, explanations, services, and their relationships all live inside the canvas.
+There are no permanent sidebars or header strip. A compact bottom-center transport
+panel contains previous/play/next controls, stage name, status, and current level.
+A collapsible dashboard menu contains secondary controls. The journey has four steps:
 
 1. **Welcome** — what the site teaches plus a preview of the lifecycle, with
-   one action: "Set up simulation".
+   one action: "Set up walkthrough".
 2. **Configure environment** — provider-neutral picks for language, ML
    library, software environment, and compute, each explained in one sentence
    (recommended preset available). Fully simulated — nothing is installed.
 3. **Validate** — simulated checks for runtime, dependencies, data access,
    and compute animate in sequence. Deterministic rules mean your choices
-   matter (e.g., an R runtime can't host a Python library; PyTorch on CPU-only
-   fails with a one-click suggested fix).
-4. **Simulate** — "Start simulation" appears only after all checks pass and
-   flies the camera to Stage 1. Your configured stack is woven into relevant
-   stage descriptions.
+   matter: XGBoost supports Python and R; R needs conda or an R-enabled image,
+   not venv + pip. PyTorch on CPU passes with a performance advisory.
+4. **Explore** — "Begin walkthrough" appears only after all checks pass and
+   opens the lifecycle overview. The bottom panel shows walkthrough progress;
+   inspecting any other stage does not advance progress.
 
-A header stepper (Welcome → Set up → Validate → Simulate) shows progress.
-"Reset setup" and "Reset simulation" are separate controls, and you can go
-back to setup without losing your choices. Reduced-motion preferences skip
-the staggered check animation.
+"Reset setup" and "Reset progress" are separate controls. Edit the environment
+without losing your choices, and restart the walkthrough after resetting progress.
+Reduced-motion preferences skip staggered checks and animated camera movement.
+Help and official references are an on-canvas scene; external links open in a new tab.
 
-### Architecture levels
+### Diagram views
 
-Once the simulation is running, a **Level 1 / Level 2** switch appears in the
-header. The two dimensions stay distinct: lifecycle *stages* are the eight
-steps; architecture *levels* are the views used to explore them.
+Select a stage and choose **Explore stage services**, or double-click the stage,
+to drill into its service diagram. The compact MLOps lab button returns to the
+lifecycle overview. The dashboard menu provides a labeled service selector.
 
-- **Level 1** — the lifecycle canvas described below.
-- **Level 2 — Container view** — the selected stage expanded into a C4-style
-  container diagram: simulated services, data stores, externals, and stage
-  handoffs connected by labeled arrows (including decision branches like
-  "reject → retrain" and feedback returns). Clicking a container opens the
-  same on-canvas Overview → Inputs → Processing → Outputs window. A compact
-  stage strip plus ‹ › arrows lets you move between stages without leaving
-  Level 2 — and switching levels always preserves the selected stage.
+- **Overview** — the lifecycle overview described below, not a C4 System Context view.
+- **Level 2 · Current stage** — the selected lifecycle stage has a named boundary
+  and its current/completed/upcoming status. Services and stores are inside;
+  incoming/outgoing handoffs, feedback destinations, and external actors are outside.
+  Labeled arrows show data flow and decisions. Selecting a node opens its explanation.
+- **Level 2 · All stages** — all eight boundaries and their internal services/stores,
+  connected by cross-stage handoffs and feedback. Select any stage or contained node
+  to focus that stage. This overview is intended for pan/zoom exploration.
+- **Current level** in the bottom panel switches views while preserving the selected
+  stage. The arrows navigate stages; the menu provides a service selector for keyboard inspection.
 
 The lifecycle itself:
 
@@ -68,28 +73,42 @@ The lifecycle itself:
   path: 1–4 left-to-right, a turn downward, then 5–8 right-to-left, with
   directional arrows and a dashed **feedback loop** from Monitor and respond
   back to Define the problem.
-- **Inline stage details** — selecting a stage attaches a persistent
-  explanation window on the canvas (connected to the stage) with four fixed
-  sections: Overview, then an Inputs → Processing → Outputs flow listing each
-  item with a one-line note. Only the selected stage expands; the window parks
-  in the free lane (above row 1 / below row 2) so it never covers nodes or
-  connectors, and transitions smoothly when another stage is selected.
+- **Contextual stage details** — selecting a stage opens its connected summary.
+  Expand the explanation for Inputs, Processing, and Outputs. One detail card is
+  visible at a time, parked in a reserved lane clear of the diagram. On narrow
+  screens, the camera frames the card alone to preserve readable text.
 - **States** — completed, current, and upcoming stages are visually distinct.
 
-Screen-fixed overlays (they do not scroll or drift with the canvas):
+Dashboard controls remain compact and within the canvas viewport:
 
-- **Header HUD**: product name and theme toggle.
-- **Toolbar HUD**: Start / Next / Reset and a "Stage N of 8" progress chip.
+- **Tool cluster**: lifecycle overview and collapsed dashboard menu.
+- **Bottom-center panel**: previous-stage arrow, middle play button, next-stage arrow,
+  stage name/status, playback progress, and Current level selector. The icon-only
+  play button starts timed simulation and becomes Pause while running; paused
+  playback resumes from the same step, and completed playback can restart.
+- **Level-scoped playback**: Level 1 illustrates eight lifecycle stages. Focused
+  Level 2 illustrates the selected stage's service/data flow; the full Level 2
+  overview follows 46 happy-path nodes across all stages. Progress is independent
+  for Level 1, each focused stage, and the Level 2 overview. Steps last 3.2 seconds.
+  Switching levels, navigating stages, opening help/setup, or inspecting nodes
+  pauses playback. Reset affects only the current view's playback.
+- **Collapsed menu**: service selector, environment, reset, theme, help.
+- **Contextual cards**: overview, expand/collapse, close, and service drill-down.
+- **Accessibility**: skip link, visible focus, labeled selectors, status announcements,
+  Enter-to-inspect focused nodes, and Escape to dismiss menu/help.
 
 Canvas behavior:
 
-- Pan/zoom freely, zoom controls, mini-map, fit-to-view, Reset view.
+- Pan/zoom freely, compact zoom controls, fit-to-view, Reset view; no persistent minimap.
 - Clicking a stage selects it and reveals its details — without changing
   simulation progress.
-- Start begins the seeded scenario; Next advances one stage, highlights it,
-  and glides the camera to it; Reset returns the simulation, selection, and
-  camera to the start. Fully deterministic — no timers or randomness.
-- **Dark theme**: light by default, header toggle; the canvas follows via
+- Start runs a deterministic, timed sequence in the selected level. Active nodes
+  and incoming relationships are highlighted; completed transfers remain marked.
+  Focused views open the current explanation, while the Level 2 overview frames
+  the active stage/node. Pause stops advancement and edge animation. Reduced
+  motion disables camera/edge animation without disabling timed progression.
+  Branches are explanatory, not executable decisions; playback follows a fixed happy path.
+- **Dark theme**: light by default, dashboard-menu toggle; the canvas follows via
   `colorMode`.
 
 ## Project layout
@@ -133,7 +152,7 @@ src/
 
 ## Intentionally deferred
 
-- Levels 2–4 (Containers, Components, Code) — tabs exist but are disabled.
-- Multiple/real scenarios, a full lifecycle simulator, and decision branching.
+- Deeper component/code views beyond the current stage service flows.
+- Multiple/real scenarios, a full lifecycle simulator, and executable decision branching.
 - Instructor-specific views, progress persistence, and i18n.
 - Any live integration with external MLOps tooling.

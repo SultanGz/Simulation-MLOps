@@ -49,7 +49,7 @@ export const envGroups: EnvGroup[] = [
     options: [
       { id: "venv", label: "venv + pip", note: "Lightweight per-project isolation." },
       { id: "conda", label: "conda", note: "Manages packages and native dependencies." },
-      { id: "container", label: "Container image", note: "Fully reproducible, portable environment." },
+      { id: "container", label: "Container image", note: "Pinned images support reproducibility; host and hardware still matter." },
     ],
   },
   {
@@ -101,12 +101,15 @@ export function evaluateChecks(config: EnvConfig): CheckResult[] {
     detail: `${optionLabel("language", config.language)} runtime is available.`,
   });
 
-  const rWithPythonLib =
-    config.language === "r" && config.library !== "tidymodels";
-  const pythonWithRLib =
-    config.language === "python" && config.library === "tidymodels";
-  if (rWithPythonLib || pythonWithRLib) {
-    const needed = config.library === "tidymodels" ? "r" : "python";
+  const supportedLanguages: Record<string, string[]> = {
+    "scikit-learn": ["python"],
+    pytorch: ["python"],
+    xgboost: ["python", "r"],
+    tidymodels: ["r"],
+  };
+  const languages = supportedLanguages[config.library] ?? [];
+  if (!languages.includes(config.language)) {
+    const needed = languages[0] ?? "python";
     results.push({
       id: "dependencies",
       label: "Dependencies",
@@ -115,6 +118,17 @@ export function evaluateChecks(config: EnvConfig): CheckResult[] {
       fix: {
         label: `Switch language to ${optionLabel("language", needed)}`,
         config: { ...config, language: needed },
+      },
+    });
+  } else if (config.language === "r" && config.environment === "venv") {
+    results.push({
+      id: "dependencies",
+      label: "Dependencies",
+      status: "failed",
+      detail: "venv + pip isolates Python packages, not R. Use conda with R packages or an R-enabled container image.",
+      fix: {
+        label: "Switch environment to conda",
+        config: { ...config, environment: "conda" },
       },
     });
   } else {
@@ -137,13 +151,9 @@ export function evaluateChecks(config: EnvConfig): CheckResult[] {
     results.push({
       id: "compute",
       label: "Compute",
-      status: "failed",
+      status: "passed",
       detail:
-        "Neural network training on CPU-only is impractically slow for this scenario.",
-      fix: {
-        label: "Switch to a GPU option",
-        config: { ...config, compute: "gpu" },
-      },
+        "PyTorch supports CPU training. Larger models may train slowly; consider a GPU if runtime becomes a constraint.",
     });
   } else {
     results.push({

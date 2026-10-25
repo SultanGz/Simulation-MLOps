@@ -196,9 +196,10 @@ export const stageDiagrams: StageDiagram[] = [
       { id: "e2", source: "governance", target: "raw-store", label: "permitted data", kind: "flow" },
       { id: "e3", source: "raw-store", target: "profiling", label: "raw dataset", kind: "flow" },
       { id: "e4", source: "profiling", target: "catalog", label: "profile + findings", kind: "flow", sourceHandle: "s-bottom", targetHandle: "t-right" },
-      { id: "e5", source: "profiling", target: "to-stage-3", label: "suitable data + findings", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
-      { id: "e6", source: "profiling", target: "back-stage-1", label: "unsuitable → redefine", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-right" },
-      { id: "e7", source: "profiling", target: "connectors", label: "reselect sources", kind: "decision", sourceHandle: "s-top", targetHandle: "t-top" },
+      { id: "e5", source: "profiling", target: "to-stage-3", label: "pass: suitable data + findings", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
+      { id: "e6", source: "profiling", target: "back-stage-1", label: "reject: redefine problem", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-right" },
+      { id: "e7", source: "profiling", target: "connectors", label: "improve: reselect sources", kind: "decision", sourceHandle: "s-top", targetHandle: "t-top" },
+      { id: "e8", source: "from-stage-1", target: "profiling", label: "success criteria", kind: "handoff", sourceHandle: "s-right", targetHandle: "t-top" },
     ],
   },
 
@@ -222,7 +223,7 @@ export const stageDiagrams: StageDiagram[] = [
         detail: {
           overview: "Repeatable pipeline that cleans and reshapes selected data.",
           inputs: [io("Selected dataset", "From acquisition"), io("Preparation rules", "Cleaning and shaping steps")],
-          processing: "Applies cleaning, joins, and encodings as recorded steps.",
+          processing: "Creates train/evaluation splits before fitting learned preprocessing. Fits imputers, scalers, and encoders on training data only; transforms evaluation data with the fitted steps.",
           outputs: [io("Transformed data", "Sent to validation checks")],
         },
       },
@@ -242,7 +243,7 @@ export const stageDiagrams: StageDiagram[] = [
         detail: {
           overview: "Computes the final feature set used for training.",
           inputs: [io("Checked data", "From validation")],
-          processing: "Derives features, splits train/eval sets, and packages the result reproducibly.",
+          processing: "Derives features within the existing splits, fits any learned feature steps on training data only, and transforms evaluation data without refitting. Records split lineage and fitted steps.",
           outputs: [io("Feature set", "Versioned into the store")],
         },
       },
@@ -253,7 +254,7 @@ export const stageDiagrams: StageDiagram[] = [
           overview: "Versioned prepared datasets with their pipeline record.",
           inputs: [io("Feature set", "From feature computation")],
           processing: "Stores immutable dataset versions plus the steps that produced them.",
-          outputs: [io("Prepared dataset", "Handed to training")],
+          outputs: [io("Prepared dataset", "Training split handed to Stage 4"), io("Evaluation splits", "Held out for the Stage 5 evaluation data store")],
         },
       },
       {
@@ -280,11 +281,11 @@ export const stageDiagrams: StageDiagram[] = [
     edges: [
       { id: "e0", source: "from-stage-2", target: "pipeline", label: "selected dataset", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e1", source: "pipeline", target: "validation", label: "transformed data", kind: "flow" },
-      { id: "e2", source: "validation", target: "features", label: "checked data ✓", kind: "flow" },
+      { id: "e2", source: "validation", target: "features", label: "pass: checked data", kind: "flow" },
       { id: "e3", source: "features", target: "feature-store", label: "feature set", kind: "flow" },
       { id: "e4", source: "feature-store", target: "to-stage-4", label: "prepared dataset", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
-      { id: "e5", source: "validation", target: "pipeline", label: "fail: fix steps", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-bottom" },
-      { id: "e6", source: "validation", target: "back-stage-2", label: "fail: re-acquire", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-right" },
+      { id: "e5", source: "validation", target: "pipeline", label: "improve: fix steps", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-bottom" },
+      { id: "e6", source: "validation", target: "back-stage-2", label: "reject: re-acquire", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-right" },
     ],
   },
 
@@ -382,7 +383,7 @@ export const stageDiagrams: StageDiagram[] = [
         name: "Evaluation data", responsibility: "Held-out and slice datasets",
         detail: {
           overview: "Held-out and representative slices for honest scoring.",
-          inputs: [io("Prepared dataset", "Eval splits from preparation")],
+          inputs: [io("Evaluation splits", "From the Stage 3 feature store; transformed with training-fitted preprocessing only")],
           processing: "Serves the right slices for each evaluation run.",
           outputs: [io("Eval slices", "Fed to the evaluation service")],
         },
@@ -429,9 +430,9 @@ export const stageDiagrams: StageDiagram[] = [
       },
       {
         id: "back-stage-4", kind: "handoff", x: 300, y: 300,
-        name: "↩ Stage 4", responsibility: "Retrain (rejected)",
+        name: "↩ Stage 4", responsibility: "Retrain (improve / reject)",
         detail: {
-          overview: "Rejected candidates return to training.",
+          overview: "Candidates needing improvement or rejected for this release return to training with findings.",
           inputs: [io("Decision", "From the approval gate")],
           processing: "Sends failure analysis back so training can adjust.",
           outputs: [io("Retrain request", "Reopens experiments")],
@@ -443,8 +444,8 @@ export const stageDiagrams: StageDiagram[] = [
       { id: "e1", source: "eval-data", target: "eval-service", label: "eval slices", kind: "flow" },
       { id: "e2", source: "eval-service", target: "results-store", label: "scores + slices", kind: "flow" },
       { id: "e3", source: "results-store", target: "approval", label: "evaluation report", kind: "flow" },
-      { id: "e4", source: "approval", target: "to-stage-6", label: "pass ✓", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
-      { id: "e5", source: "approval", target: "back-stage-4", label: "reject → retrain", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-right" },
+      { id: "e4", source: "approval", target: "to-stage-6", label: "pass: approved", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-top" },
+      { id: "e5", source: "approval", target: "back-stage-4", label: "improve / reject: retrain", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-right" },
     ],
   },
 
@@ -518,8 +519,8 @@ export const stageDiagrams: StageDiagram[] = [
       { id: "e1", source: "registry", target: "build", label: "versioned entry", kind: "flow" },
       { id: "e2", source: "build", target: "test-runner", label: "deployable package", kind: "flow" },
       { id: "e3", source: "test-runner", target: "test-store", label: "test results", kind: "flow", sourceHandle: "s-bottom", targetHandle: "t-top" },
-      { id: "e4", source: "test-runner", target: "to-stage-7", label: "pass ✓", kind: "handoff" },
-      { id: "e5", source: "test-runner", target: "build", label: "fail: fix", kind: "decision", sourceHandle: "s-top", targetHandle: "t-top" },
+      { id: "e4", source: "test-runner", target: "to-stage-7", label: "pass: approved", kind: "handoff" },
+      { id: "e5", source: "test-runner", target: "build", label: "improve: fix", kind: "decision", sourceHandle: "s-top", targetHandle: "t-top" },
     ],
   },
 
@@ -594,6 +595,7 @@ export const stageDiagrams: StageDiagram[] = [
       { id: "e2", source: "release", target: "endpoint", label: "release + record", kind: "flow" },
       { id: "e3", source: "endpoint", target: "consumer", label: "predictions", kind: "flow" },
       { id: "e4", source: "endpoint", target: "to-stage-8", label: "outputs + telemetry", kind: "handoff", sourceHandle: "s-bottom", targetHandle: "t-bottom" },
+      { id: "e5", source: "consumer", target: "endpoint", label: "prediction requests", kind: "flow", sourceHandle: "s-top", targetHandle: "t-top" },
     ],
   },
 

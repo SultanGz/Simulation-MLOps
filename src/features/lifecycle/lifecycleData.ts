@@ -44,7 +44,7 @@ export const lifecycleStages: LifecycleStage[] = [
     outputs: [
       { name: "ML task definition", note: "Guides every later stage." },
       { name: "Success measures", note: "Used to score candidates in Evaluate and validate." },
-      { name: "Acceptance criteria", note: "Gate the approval in Register, package, and test." },
+      { name: "Acceptance criteria", note: "Gate candidate approval in Evaluate and validate (Stage 5)." },
     ],
   },
   {
@@ -75,7 +75,7 @@ export const lifecycleStages: LifecycleStage[] = [
       { name: "Quality requirements", note: "Thresholds derived from the findings." },
     ],
     processing:
-      "Clean, transform, and engineer features; encode the steps as a repeatable pipeline.",
+      "Split training and evaluation data before learned preprocessing; fit preprocessing and feature steps on training data only, then transform evaluation data without refitting. Record the pipeline and split lineage.",
     outputs: [
       { name: "Prepared features", note: "Fed into Train and track experiments." },
       { name: "Repeatable pipeline", note: "Re-run whenever data changes." },
