@@ -14,10 +14,12 @@ import "@xyflow/react/dist/style.css";
 import { lifecycleStages } from "../lifecycle/lifecycleData";
 import { StageNode, type StageFlowNode } from "./StageNode";
 import { StageDetailNode, type StageDetailFlowNode } from "./StageDetailNode";
+import { PreflightPanelNode } from "../preflight/PreflightPanelNode";
 
 const nodeTypes = {
   lifecycleStage: StageNode,
   stageDetail: StageDetailNode,
+  preflightPanel: PreflightPanelNode,
 };
 
 /* ---------- Precise 4x2 serpentine layout ---------- */
@@ -58,6 +60,10 @@ interface WorkspaceCanvasProps {
   activeOrder: number;
   /** True once the simulation has run to the final stage. */
   finished: boolean;
+  /** Optional scene panel node rendered during preflight. */
+  preflightNode?: Node;
+  /** Node id the camera should frame (preflight scenes); null = stage logic. */
+  focusId?: string | null;
   onSelect: (id: string | null) => void;
   theme: "light" | "dark";
 }
@@ -66,6 +72,8 @@ function Canvas({
   selectedId,
   activeOrder,
   finished,
+  preflightNode,
+  focusId,
   onSelect,
   theme,
 }: WorkspaceCanvasProps) {
@@ -109,8 +117,12 @@ function Canvas({
       });
     }
 
-    return [...stages, ...detailNodes];
-  }, [selectedId, activeOrder, finished]);
+    return [
+      ...(preflightNode ? [preflightNode] : []),
+      ...stages,
+      ...detailNodes,
+    ];
+  }, [selectedId, activeOrder, finished, preflightNode]);
 
   const edges: Edge[] = useMemo(() => {
     // Serpentine chain: row 1 left→right, down at 4→5, row 2 right→left.
@@ -177,6 +189,17 @@ function Canvas({
   // detail window so the card can never leave the viewport.
   const firstRender = useRef(true);
   useEffect(() => {
+    // Preflight scenes take camera priority.
+    if (focusId) {
+      void fitView({
+        nodes: [{ id: focusId }],
+        duration: firstRender.current ? 0 : 500,
+        padding: 0.35,
+        maxZoom: 1,
+      });
+      firstRender.current = false;
+      return;
+    }
     if (firstRender.current) {
       firstRender.current = false;
       void fitView({ padding: 0.15 });
@@ -192,7 +215,7 @@ function Canvas({
     } else {
       void fitView({ padding: 0.15, duration: 400 });
     }
-  }, [selectedId, fitView]);
+  }, [selectedId, focusId, fitView]);
 
   const resetView = useCallback(() => {
     void fitView({ padding: 0.15, duration: 250 });

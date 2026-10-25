@@ -27,7 +27,27 @@ backend services are needed at runtime — all scenario data is bundled.
 ## What's in this milestone
 
 The app is a **single full-viewport canvas** (React Flow), not a scrolling
-page. The only content is the MLOps lifecycle itself:
+page. The journey runs as on-canvas scenes:
+
+1. **Welcome** — what the site teaches plus a preview of the lifecycle, with
+   one action: "Set up simulation".
+2. **Configure environment** — provider-neutral picks for language, ML
+   library, software environment, and compute, each explained in one sentence
+   (recommended preset available). Fully simulated — nothing is installed.
+3. **Validate** — simulated checks for runtime, dependencies, data access,
+   and compute animate in sequence. Deterministic rules mean your choices
+   matter (e.g., an R runtime can't host a Python library; PyTorch on CPU-only
+   fails with a one-click suggested fix).
+4. **Simulate** — "Start simulation" appears only after all checks pass and
+   flies the camera to Stage 1. Your configured stack is woven into relevant
+   stage descriptions.
+
+A header stepper (Welcome → Set up → Validate → Simulate) shows progress.
+"Reset setup" and "Reset simulation" are separate controls, and you can go
+back to setup without losing your choices. Reduced-motion preferences skip
+the staggered check animation.
+
+The lifecycle itself:
 
 - **Serpentine sequence** — eight provider-neutral stages on a precise 4×2
   path: 1–4 left-to-right, a turn downward, then 5–8 right-to-left, with
@@ -70,8 +90,11 @@ src/
       StageDetailNode.tsx        inline Input/Output card attached to the selected stage
     lifecycle/
       lifecycleData.ts           the eight provider-neutral lifecycle stages (inputs/outputs)
+    preflight/
+      preflightData.ts           env options, preset, deterministic check evaluator
+      PreflightPanelNode.tsx     welcome/setup/validate scenes as canvas panels
     simulation/
-      simulation.ts              deterministic Start/Next/Reset state machine (one step per stage)
+      simulation.ts              deterministic Start/Next/Reset state machine (env-aware steps)
 ```
 
 ## Choices and scope notes
