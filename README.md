@@ -33,10 +33,12 @@ page. The only content is the MLOps lifecycle itself:
   path: 1–4 left-to-right, a turn downward, then 5–8 right-to-left, with
   directional arrows and a dashed **feedback loop** from Monitor and respond
   back to Define the problem.
-- **Inline stage details** — selecting a stage attaches a detail card node on
-  the canvas (connected to the stage) showing what it does plus its labeled
-  Input and Output. Only the selected stage expands; cards are positioned to
-  avoid the chain and feedback edges.
+- **Inline stage details** — selecting a stage attaches a persistent
+  explanation window on the canvas (connected to the stage) with four fixed
+  sections: Overview, then an Inputs → Processing → Outputs flow listing each
+  item with a one-line note. Only the selected stage expands; the window parks
+  in the free lane (above row 1 / below row 2) so it never covers nodes or
+  connectors, and transitions smoothly when another stage is selected.
 - **States** — completed, current, and upcoming stages are visually distinct.
 
 Screen-fixed overlays (they do not scroll or drift with the canvas):

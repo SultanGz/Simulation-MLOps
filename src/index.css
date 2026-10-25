@@ -237,35 +237,99 @@ body {
   stroke-dasharray: 5 4;
 }
 
-/* Inline stage detail card (canvas node) */
+/* Stage explanation window (canvas node) */
 
-.stage-detail-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  border: 1.5px solid var(--accent);
-  border-radius: 10px;
-  background: var(--paper);
-  padding: 0.65rem 0.8rem;
-  box-shadow: var(--hud-shadow);
-  font-size: 0.78rem;
-  line-height: 1.4;
+.react-flow__node-stageDetail {
+  transition: transform 0.35s ease;
 }
 
-.stage-detail-card__row {
+.stage-detail-card {
+  border: 1.5px solid var(--accent);
+  border-radius: 12px;
+  background: var(--paper);
+  padding: 0.8rem 1rem;
+  box-shadow: var(--hud-shadow);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.stage-detail-card__body {
+  animation: stage-detail-in 0.3s ease;
   display: flex;
-  gap: 0.6rem;
-  align-items: baseline;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+@keyframes stage-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stage-detail-card__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
 }
 
 .stage-detail-card__label {
-  flex-shrink: 0;
-  width: 3.2rem;
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
   color: var(--accent);
+}
+
+.stage-detail-card__overview {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.stage-detail-card__flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 0.7rem;
+  align-items: start;
+}
+
+.stage-detail-card__col {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--wash);
+  padding: 0.55rem 0.65rem;
+}
+
+.stage-detail-card__col ul {
+  margin: 0;
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.stage-detail-card__col li,
+.stage-detail-card__col p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.stage-detail-card__col strong {
+  color: var(--ink);
+}
+
+.stage-detail-card__arrow {
+  align-self: center;
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 /* Minimap */

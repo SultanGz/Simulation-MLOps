@@ -28,8 +28,9 @@ const ROW_1_Y = 120;
 const ROW_2_Y = 520;
 const GRID_X = 40;
 
-const DETAIL_W = 360;
-const DETAIL_GAP_Y = 100;
+const DETAIL_W = 620;
+const DETAIL_H = 235;
+const DETAIL_GAP_Y = 70;
 
 /** Stage order → grid position (1-4 left→right, 5-8 right→left). */
 function stagePosition(order: number): { x: number; y: number } {
@@ -38,15 +39,15 @@ function stagePosition(order: number): { x: number; y: number } {
 }
 
 /**
- * X for the inline detail card so it never covers the vertical feedback
- * edge (x≈135, stage 8→1) or the 4→5 turn (x≈885).
+ * The detail window parks in the free lane: above row 1, below row 2 —
+ * so it can never cover a stage node or a connector edge.
  */
-function detailX(order: number): number {
+function detailPosition(order: number): { x: number; y: number } {
   const p = stagePosition(order);
   const centered = p.x + STAGE_W / 2 - DETAIL_W / 2;
-  if (order === 1) return 170; // clear the feedback edge at x≈135
-  if (order === 4) return 500; // clear the 4→5 connector at x≈885
-  return Math.max(40, centered);
+  const x = Math.max(GRID_X, Math.min(centered, GRID_X + 3 * STAGE_STEP + STAGE_W - DETAIL_W));
+  const y = order <= 4 ? ROW_1_Y - DETAIL_H - DETAIL_GAP_Y : ROW_2_Y + DETAIL_GAP_Y;
+  return { x, y };
 }
 
 /* ---------- Component ---------- */
@@ -92,16 +93,17 @@ function Canvas({
       };
     });
 
-    // Inline detail card attached to the selected stage.
+    // One persistent detail window (stable id → smooth move/content swap)
+    // attached to whichever stage is selected.
     const detailNodes: StageDetailFlowNode[] = [];
     const selStage = lifecycleStages.find((s) => s.id === selectedId);
     if (selStage) {
-      const p = stagePosition(selStage.order);
+      const below = selStage.order > 4; // row-2 stages expand below the row
       detailNodes.push({
-        id: `detail-${selStage.id}`,
+        id: "stage-detail",
         type: "stageDetail",
-        position: { x: detailX(selStage.order), y: p.y + DETAIL_GAP_Y },
-        data: { stage: selStage, below: true },
+        position: detailPosition(selStage.order),
+        data: { stage: selStage, below },
         style: { width: DETAIL_W },
         selectable: false,
         draggable: false,
@@ -150,16 +152,17 @@ function Canvas({
       focusable: false,
     };
 
-    // Connector from the selected stage to its inline detail card.
+    // Connector from the selected stage to its attached detail window.
     const detailEdges: Edge[] = [];
     const selStage = lifecycleStages.find((s) => s.id === selectedId);
     if (selStage) {
+      const below = selStage.order > 4;
       detailEdges.push({
-        id: `detail-edge-${selStage.id}`,
+        id: "detail-edge",
         source: selStage.id,
-        sourceHandle: "s-bottom",
-        target: `detail-${selStage.id}`,
-        targetHandle: "t-top",
+        sourceHandle: below ? "s-bottom" : "s-top",
+        target: "stage-detail",
+        targetHandle: below ? "t-top" : "t-bottom",
         type: "smoothstep",
         className: "canvas-edge--detail",
         focusable: false,
