@@ -652,7 +652,7 @@ export const stageDiagrams: StageDiagram[] = [
         },
       },
       {
-        id: "fb-train", kind: "handoff", x: 0, y: 300,
+        id: "fb-train", kind: "handoff", x: 0, y: 480,
         name: "↩ Stage 4", responsibility: "Retrain on quality drop",
         detail: {
           overview: "Model quality below threshold triggers retraining.",
@@ -662,7 +662,7 @@ export const stageDiagrams: StageDiagram[] = [
         },
       },
       {
-        id: "fb-data", kind: "handoff", x: 600, y: 300,
+        id: "fb-data", kind: "handoff", x: 260, y: 480,
         name: "↩ Stage 2", responsibility: "Re-acquire on data drift",
         detail: {
           overview: "Data drift sends the team back to acquisition.",
@@ -672,7 +672,7 @@ export const stageDiagrams: StageDiagram[] = [
         },
       },
       {
-        id: "fb-define", kind: "handoff", x: 900, y: 300,
+        id: "fb-define", kind: "handoff", x: 520, y: 480,
         name: "↩ Stage 1", responsibility: "Redefine on need change",
         detail: {
           overview: "A changed business need reopens problem definition.",
@@ -688,9 +688,9 @@ export const stageDiagrams: StageDiagram[] = [
       { id: "e2", source: "monitor", target: "alerts", label: "threshold breach", kind: "flow" },
       { id: "e3", source: "monitor", target: "feedback-queue", label: "drift / quality drop", kind: "flow", sourceHandle: "s-bottom", targetHandle: "t-top" },
       { id: "e4", source: "alerts", target: "feedback-queue", label: "incidents", kind: "flow", sourceHandle: "s-bottom", targetHandle: "t-top" },
-      { id: "e5", source: "feedback-queue", target: "fb-train", label: "retrain (quality)", kind: "decision" },
-      { id: "e6", source: "feedback-queue", target: "fb-data", label: "re-acquire (data drift)", kind: "decision" },
-      { id: "e7", source: "feedback-queue", target: "fb-define", label: "redefine (need change)", kind: "decision" },
+      { id: "e5", source: "feedback-queue", target: "fb-train", label: "retrain (quality drop)", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-top" },
+      { id: "e6", source: "feedback-queue", target: "fb-data", label: "re-acquire (data drift)", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-top" },
+      { id: "e7", source: "feedback-queue", target: "fb-define", label: "redefine (need change)", kind: "decision", sourceHandle: "s-bottom", targetHandle: "t-top" },
     ],
   },
 ];
