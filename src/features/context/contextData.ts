@@ -62,7 +62,7 @@ export const contextRelationships: ContextRelationship[] = [
     kind: "Relationship",
     source: "learner",
     target: "system",
-    label: "Selects a scenario, explores the diagram, advances the simulation",
+    label: "Selects scenario · advances simulation",
     description:
       "The Learner drives the session: choosing a scenario, clicking around the lifecycle context, and stepping the simulation forward through decision points.",
   },
@@ -71,7 +71,7 @@ export const contextRelationships: ContextRelationship[] = [
     kind: "Relationship",
     source: "system",
     target: "learner",
-    label: "Shows lifecycle state, decision outcomes, and explanations",
+    label: "Shows state · outcomes · explanations",
     description:
       "In return, the website presents the current lifecycle state, the simulated result of each decision, and plain-language explanations — all generated locally from the sample scenario.",
   },
@@ -80,7 +80,7 @@ export const contextRelationships: ContextRelationship[] = [
     kind: "Relationship",
     source: "instructor",
     target: "system",
-    label: "Opens and facilitates a scenario walkthrough",
+    label: "Facilitates a walkthrough",
     description:
       "The Instructor uses the same interactive view to present a scenario to a group, stepping through the same deterministic simulation states.",
   },

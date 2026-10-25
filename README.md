@@ -29,24 +29,28 @@ backend services are needed at runtime — all scenario data is bundled.
 - **Header** with product name and purpose.
 - **Four navigation tabs** mirroring C4 levels. Level 1 works; Levels 2–4 are
   labeled "planned" and disabled.
-- **Level 1 System Context diagram** built with `@xyflow/react`:
+- **Level 1 System Context diagram** built with `@xyflow/react`, as the visual
+  focus of the page:
   - *Learner* (primary actor) → *simulation-MLOps* → *Learner* relationships
   - *Instructor* (secondary actor) → *simulation-MLOps*
   - Fixed positions (guided, not an editor), pan/zoom, fit-to-view, Reset view.
-  - Selecting any element shows a plain-language explanation in the detail panel.
-- **The MLOps lifecycle**: a dedicated section with the eight provider-neutral
-  stages the site simulates (Define → Acquire → Prepare → Train → Evaluate →
-  Register/package/test → Deploy → Monitor/respond). Each card shows the
-  stage's input and output in plain language.
+  - Parallel edges are offset so relationship labels never overlap.
+- **Lifecycle stage strip**: eight compact, selectable pills (number + short
+  name) below the diagram — Define → Acquire → Prepare → Train → Evaluate →
+  Register/package/test → Deploy → Monitor/respond.
+- **Concise detail panel**: the simulation-MLOps system is selected by default;
+  selecting any person, system, relationship, or stage swaps in a short
+  explanation — a stage also shows its plain-language Input and Output.
 - **Sample simulation**: Start begins a seeded scenario and Next steps through
-  the eight lifecycle stages in order, highlighting the active stage and
-  diagram elements; Reset restores the idle state. Fully deterministic — no
-  timers or randomness.
+  the eight lifecycle stages in order, highlighting the active stage (the
+  context diagram itself stays a context view — it is not rearranged into a
+  process flow). A "Stage N of 8 / Complete" progress label tracks position;
+  Reset restores the idle state. Fully deterministic — no timers or randomness.
 - **Dark theme**: light by default, with a header toggle (the diagram follows
   the theme via `@xyflow/react`'s `colorMode`).
 - **Accessibility**: focusable diagram elements, real `<button>` controls, a
-  `role="status"` live region for simulation status, and a full text/list
-  alternative to the diagram. Responsive down to narrow screens.
+  `role="status"` live region, and the full element list behind a collapsed
+  "Diagram contents" disclosure. Responsive down to narrow screens.
 
 ## Project layout
 

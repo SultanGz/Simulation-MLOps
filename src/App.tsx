@@ -23,13 +23,17 @@ type Theme = "light" | "dark";
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>("light");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>("system");
   const [sim, setSim] = useState<SimulationState>(initialSimulationState);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  // Keep the detail panel focused on whichever stage the simulation is on.
+  useEffect(() => {
+    if (sim.step.activeStageId) setSelectedId(sim.step.activeStageId);
+  }, [sim.stepIndex, sim.step.activeStageId]);
 
   const toggleTheme = useCallback(
     () => setTheme((t) => (t === "light" ? "dark" : "light")),
@@ -39,16 +43,14 @@ export default function App() {
   const onNext = useCallback(() => setSim((s) => advance(s)), []);
   const onReset = useCallback(() => {
     setSim(reset());
-    setSelectedStageId(null);
+    setSelectedId("system");
   }, []);
 
-  const activeStage = sim.step.activeStageId
-    ? lifecycleStages.find((s) => s.id === sim.step.activeStageId)
-    : undefined;
-  const shownStage =
-    selectedStageId != null
-      ? lifecycleStages.find((s) => s.id === selectedStageId)
-      : activeStage;
+  const progress = !sim.started
+    ? "Not started"
+    : sim.finished
+      ? "Complete — all 8 stages"
+      : `Stage ${sim.stepIndex} of ${lifecycleStages.length}`;
 
   return (
     <div className="app">
@@ -57,8 +59,7 @@ export default function App() {
           <div>
             <h1 className="site-header__title">simulation-MLOps</h1>
             <p className="site-header__purpose">
-              Learn the MLOps lifecycle by stepping through guided, in-browser
-              simulations — no accounts, no external services.
+              Learn the MLOps lifecycle through guided in-browser simulations.
             </p>
           </div>
           <button
@@ -99,7 +100,7 @@ export default function App() {
       </nav>
 
       <main>
-        <section className="sim-controls" aria-label="Sample simulation controls">
+        <section className="sim-controls" aria-label="Simulation controls">
           <div className="sim-controls__buttons">
             <button type="button" className="btn" onClick={onStart} disabled={sim.started}>
               Start
@@ -122,39 +123,33 @@ export default function App() {
             </button>
           </div>
           <div className="sim-controls__status" role="status" aria-live="polite">
-            <strong>{sim.step.status}</strong>
-            <p>{sim.step.description}</p>
-            {shownStage && (
-              <p className="sim-controls__stage-io">
-                <span>
-                  <strong>Input:</strong> {shownStage.input}
-                </span>
-                <span>
-                  <strong>Output:</strong> {shownStage.output}
-                </span>
-              </p>
-            )}
+            <span className="sim-controls__progress">{progress}</span>
+            <span className="sim-controls__text">{sim.step.status}</span>
           </div>
         </section>
 
         <section className="diagram-layout" aria-label="System context diagram">
-          <ContextDiagram
-            selectedId={selectedId}
-            highlightedNodeIds={sim.step.highlightedNodeIds}
-            highlightedEdgeIds={sim.step.highlightedEdgeIds}
-            onSelect={setSelectedId}
-            theme={theme}
-          />
+          <div className="diagram-column">
+            <ContextDiagram
+              selectedId={selectedId}
+              highlightedNodeIds={sim.step.highlightedNodeIds}
+              highlightedEdgeIds={sim.step.highlightedEdgeIds}
+              onSelect={setSelectedId}
+              theme={theme}
+            />
+            <LifecycleSection
+              activeStageId={sim.step.activeStageId}
+              selectedStageId={selectedId}
+              onSelect={setSelectedId}
+            />
+          </div>
           <DetailPanel selectedId={selectedId} />
         </section>
 
-        <LifecycleSection
-          activeStageId={sim.step.activeStageId}
-          selectedStageId={selectedStageId}
-          onSelect={setSelectedStageId}
-        />
-
-        <ContextList selectedId={selectedId} onSelect={setSelectedId} />
+        <details className="diagram-contents">
+          <summary>Diagram contents (text alternative)</summary>
+          <ContextList selectedId={selectedId} onSelect={setSelectedId} />
+        </details>
       </main>
     </div>
   );

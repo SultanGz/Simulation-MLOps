@@ -8,9 +8,8 @@ interface LifecycleSectionProps {
 }
 
 /**
- * The lifecycle journey simulation-MLOps teaches — shown as a dedicated
- * section of selectable cards. Cards also act as a text alternative for
- * whichever stage the simulation is currently highlighting.
+ * Compact strip of the eight lifecycle stages — number and short name only.
+ * Selecting a stage shows its summary and inputs/outputs in the detail panel.
  */
 export function LifecycleSection({
   activeStageId,
@@ -18,20 +17,16 @@ export function LifecycleSection({
   onSelect,
 }: LifecycleSectionProps) {
   return (
-    <section className="lifecycle" aria-label="The MLOps lifecycle">
-      <h2 className="lifecycle__heading">The MLOps lifecycle</h2>
-      <p className="lifecycle__intro">
-        The journey this website simulates. These are provider-neutral stages —
-        real platforms organize them differently.
-      </p>
-      <ol className="lifecycle__grid">
+    <section className="lifecycle" aria-label="The MLOps lifecycle stages">
+      <h2 className="lifecycle__heading">MLOps lifecycle</h2>
+      <ol className="stage-strip">
         {lifecycleStages.map((stage) => {
           const active = stage.id === activeStageId;
           const selected = stage.id === selectedStageId;
           const classes = [
-            "stage-card",
-            active ? "stage-card--active" : "",
-            selected ? "stage-card--selected" : "",
+            "stage-pill",
+            active ? "stage-pill--active" : "",
+            selected ? "stage-pill--selected" : "",
           ]
             .filter(Boolean)
             .join(" ");
@@ -42,17 +37,11 @@ export function LifecycleSection({
                 className={classes}
                 aria-pressed={selected}
                 aria-current={active ? "step" : undefined}
+                title={stage.name}
                 onClick={() => onSelect(selected ? null : stage.id)}
               >
-                <span className="stage-card__order">{stage.order}</span>
-                <span className="stage-card__name">{stage.name}</span>
-                <span className="stage-card__summary">{stage.summary}</span>
-                <span className="stage-card__io">
-                  <span className="stage-card__io-label">Input:</span> {stage.input}
-                </span>
-                <span className="stage-card__io">
-                  <span className="stage-card__io-label">Output:</span> {stage.output}
-                </span>
+                <span className="stage-pill__order">{stage.order}</span>
+                <span className="stage-pill__name">{stage.name}</span>
               </button>
             </li>
           );

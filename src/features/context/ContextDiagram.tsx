@@ -17,9 +17,16 @@ const nodeTypes = { contextElement: ContextNodeView };
 
 /** Fixed, guided positions — no drag-to-author editing. */
 const nodePositions: Record<string, { x: number; y: number }> = {
-  learner: { x: 0, y: 40 },
-  system: { x: 360, y: 40 },
-  instructor: { x: 180, y: 260 },
+  learner: { x: 0, y: 90 },
+  system: { x: 460, y: 90 },
+  instructor: { x: 210, y: 320 },
+};
+
+/** Parallel learner↔system edges are offset so their labels never overlap. */
+const edgeStyles: Record<string, { offset: number }> = {
+  "learner-selects": { offset: 26 },
+  "system-explains": { offset: -26 },
+  "instructor-facilitates": { offset: 0 },
 };
 
 interface ContextDiagramProps {
@@ -62,12 +69,15 @@ function Flow({ selectedId, highlightedNodeIds, highlightedEdgeIds, onSelect, th
           id: rel.id,
           source: rel.source,
           target: rel.target,
+          type: "smoothstep",
+          pathOptions: { offset: edgeStyles[rel.id]?.offset ?? 0 },
           label: rel.label,
           selected: selectedId === rel.id,
           markerEnd: { type: MarkerType.ArrowClosed },
           className: highlighted ? "context-edge--highlighted" : undefined,
           labelStyle: { fontSize: 11, fill: "var(--ink)" },
           labelBgStyle: { fill: "var(--paper)" },
+          labelBgPadding: [6, 3] as [number, number],
           ariaLabel: `Relationship: ${rel.label}`,
           style: highlighted ? { strokeWidth: 2.5 } : undefined,
         };

@@ -30,7 +30,10 @@ const idleStep: SimulationStep = {
 };
 
 const stageSteps: SimulationStep[] = lifecycleStages.map((stage) => ({
-  status: `Step ${stage.order} of ${lifecycleStages.length} — ${stage.name}`,
+  status:
+    stage.order === lifecycleStages.length
+      ? `${stage.name} — simulation complete`
+      : stage.name,
   description:
     stage.order === 1
       ? `The Learner's scenario reaches "${stage.name}": ${stage.summary}`
